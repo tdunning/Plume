@@ -1,0 +1,4 @@
+is is
+some simple text
+To test text processing with some simple
+examples is some simple

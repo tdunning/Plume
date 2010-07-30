@@ -1,0 +1,20 @@
+<html>
+<body>
+<h1>Plume</h1>
+Plume is an independent implementation of a system similar to FlumeJava.  It allows map-reduce
+programs to be written easily with little regard for whether they will ultimately be executed
+in a parallel or sequential fashion.
+<p>
+In order to write a Plume program, you need a Plume object to work with.  This Plume defines
+the execution model of your program and there will ultimately be varieties of Plumes that
+execute code in local or parallel fashion, with or without Hadoop, and in eager
+and lazy fashion.  So far, there is part of a local, eager Plume.
+
+The <a href="http://www.deepdyve.com/lp/association-for-computing-machinery/flumejava-easy-efficient-data-parallel-pipelines-wwPgFt2hWB">FlumeJava</a> paper provides an excellent introduction to the concepts.
+With that paper in mind this code should be fairly simple.  The highest level structure is summarized by
+the following classes:
+<ul>
+    <li>@see plume.local.eager.LocalPlume</li>
+</ul>
+</body>
+</html>
