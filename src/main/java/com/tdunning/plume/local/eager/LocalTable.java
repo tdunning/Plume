@@ -21,10 +21,10 @@ public class LocalTable<K, V> extends PTable<K, V> {
    *         this.
    */
   @Override
-  public <R> PCollection<R> map(F3<K, V, R> fn) {
+  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, CollectionConversion<R> conversion) {
     final LocalCollection<R> r = new LocalCollection<R>();
     for (Pair<K, V> v : data) {
-      fn.process(v.getKey(), v.getValue(), new ValueEmitter<R>() {
+      fn.process(v, new EmitFn<R>() {
         @Override
         public void emit(R y) {
           r.getData().add(y);
@@ -42,14 +42,14 @@ public class LocalTable<K, V> extends PTable<K, V> {
    * @return A parallel table containing the transformed data.
    */
   @Override
-  public <K1, V1> PTable<K1, V1> map(F4<K, V, K1, V1> fn) {
+  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, TableConversion<K1, V1> conversion) {
     final LocalTable<K1, V1> r = new LocalTable<K1, V1>();
     for (Pair<K, V> v : data) {
       final K key = v.getKey();
-      fn.process(v.getKey(), v.getValue(), new KeyEmitter<K1, V1>() {
+      fn.process(v, new EmitFn<Pair<K1, V1>>() {
         @Override
-        public void emit(K1 key, V1 value) {
-          r.getData().add(Pair.create(key, value));
+        public void emit(Pair<K1, V1> value) {
+          r.getData().add(value);
         }
 
       });

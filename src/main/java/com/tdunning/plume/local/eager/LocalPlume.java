@@ -24,7 +24,7 @@ public class LocalPlume extends Plume {
   }
 
   @Override
-  public <T> PCollection<T> readAvroFile(String name, Plume.Conversion<T> format) {
+  public <T> PCollection<T> readAvroFile(String name, Class<T> target) {
     return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
 
@@ -44,18 +44,4 @@ public class LocalPlume extends Plume {
     return r;
   }
 
-  @Override
-  public <V> CollectionConversion<V> collectionOf(Encoding<V> valueClass) {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public <V> CollectionConversion<V> sequenceOf(Encoding<V> valueClass) {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public <R, K, V> TableConversion<R, K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
-    return null;
-  }
 }

@@ -13,10 +13,10 @@ public class LocalCollection<T> extends PCollection<T> {
   private List<T> data = Lists.newArrayList();
 
   @Override
-  public <R> PCollection<R> map(F2<T, R> fn) {
+  public <R> PCollection<R> map(DoFn<T, R> fn, CollectionConversion<R> conversion) {
     final LocalCollection<R> r = new LocalCollection<R>();
     for (T t : data) {
-      fn.process(t, new ValueEmitter<R>() {
+      fn.process(t, new EmitFn<R>() {
         @Override
         public void emit(R y) {
           r.data.add(y);
@@ -27,13 +27,13 @@ public class LocalCollection<T> extends PCollection<T> {
   }
 
   @Override
-  public <K, V> PTable<K, V> map(F3a<T, K, V> fn) {
+  public <K, V> PTable<K, V> map(DoFn<T, Pair<K, V>> fn, TableConversion<K, V> conversion) {
     final LocalTable<K, V> r = new LocalTable<K, V>();
     for (final T t : data) {
-      fn.process(t, new KeyEmitter<K, V>() {
+      fn.process(t, new EmitFn<Pair<K, V>>() {
         @Override
-        public void emit(K key, V value) {
-          r.getData().add(Pair.create(key, value));
+        public void emit(Pair<K, V> value) {
+          r.getData().add(value);
         }
       });
     }

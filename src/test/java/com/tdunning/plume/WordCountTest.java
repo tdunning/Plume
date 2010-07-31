@@ -21,21 +21,21 @@ public class WordCountTest {
     Plume p = new LocalPlume();
 
     PCollection<String> lines = p.readResourceFile("simple-text.txt");
-    PCollection<String> words = lines.map(new F2<String, String>() {
+    PCollection<String> words = lines.map(new DoFn<String, String>() {
       @Override
-      public void process(String x, ValueEmitter<String> emitter) {
+      public void process(String x, EmitFn<String> emitter) {
         for (String word : onNonWordChar.split(x)) {
           emitter.emit(word);
         }
       }
-    });
+    }, p.collectionOf(String.class));
 
-    PTable<String, Integer> wc = words.map(new F3a<String, String, Integer>() {
+    PTable<String, Integer> wc = words.map(new DoFn<String, Pair<String, Integer>>() {
       @Override
-      public void process(String x, KeyEmitter<String, Integer> emitter) {
-        emitter.emit(x, 1);
+      public void process(String x, EmitFn<Pair<String, Integer>> emitter) {
+        emitter.emit(Pair.create(x, 1));
       }
-    })
+    }, p.tableOf(String.class, Integer.class))
             .groupByKey()
             .combine(new CombinerFn<Integer>() {
               @Override

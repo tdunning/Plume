@@ -10,14 +10,14 @@ public abstract class PTable<K, V> implements Iterable<Pair<K, V>> {
    * @param fn      The function to perform.
    * @return A parallel collection whose content is the result of applying fn to each element of this.
    */
-  public abstract <R>PCollection<R> map(F3<K, V, R> fn);
+  public abstract <R>PCollection<R> map(DoFn<Pair<K, V>, R> fn, CollectionConversion<R> conversion);
 
   /**
    * Performs an operation on each element of a collection returning a transformed table.
    * @param fn    The function to perform on key/value pairs.
    * @return A parallel table containing the transformed data.
    */
-  public abstract <K1, V1>PTable<K1, V1> map(F4<K, V, K1, V1> fn);
+  public abstract <K1, V1>PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, TableConversion<K1, V1> conversion);
 
 
   /**

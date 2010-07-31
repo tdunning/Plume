@@ -11,16 +11,20 @@ public abstract class Plume {
   // general collection operations
   public abstract PCollection<String> readTextFile(String name) throws IOException;
   public abstract PCollection<String> readResourceFile(String name) throws IOException;
-  public abstract <T> PCollection<T> readAvroFile(String name, Conversion<T> format);
+  public abstract <T> PCollection<T> readAvroFile(String name, Class<T> targetClass);
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
   // conversions that signal what kind of object we want
-  public abstract <V> CollectionConversion<V> collectionOf(Encoding<V> valueEncoding);
-  public abstract <V> CollectionConversion<V> sequenceOf(Encoding<V> valueEncoding);
+  public <K, V> TableConversion<K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
+    return null;
+  }
 
-  public abstract <R, K, V> TableConversion<R, K, V> tableOf(Class<K> keyClass, Class<V> valueClass);
+  public <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
+    return null;  //To change body of implemented methods use File | Settings | File Templates.
+  }
 
-  public class Conversion<T> {
+  public <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
+    return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
 }
