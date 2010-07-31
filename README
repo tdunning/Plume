@@ -1,0 +1,3 @@
+Plume is a (so far) serial, eager approximate clone of FlumeJava. The intent is to experiment with the design of the API both to understand the design decisions the Google team made and to see if there are good alternatives.
+
+The ultimate goal is to provide something comparable to FlumeJava on top of Hadoop, but with a much more flexible execution model so that it is easy and efficient to code small problems using Plume as well as large ones. My theory is that small problems often grow into large ones and it is really nice to not have to re-implement everything as scaling happens.
