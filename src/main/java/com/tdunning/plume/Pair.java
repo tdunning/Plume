@@ -1,8 +1,11 @@
 package com.tdunning.plume;
 
 /**
- * Created by IntelliJ IDEA. User: tdunning Date: Jul 28, 2010 Time: 6:30:09 PM To change this
- * template use File | Settings | File Templates.
+ * A pair of values, generally used as a key and value as the input or output of
+ * a DoFn in the case where the input or output respectively are a PTable.
+ *
+ * IF cons'ing lots of Pairs becomes a problem, we may need to make this class
+ * final to allow better compiler optimizations.
  */
 public class Pair<K, V> {
   private K key;

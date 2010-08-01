@@ -1,8 +1,9 @@
 package com.tdunning.plume;
 
 /**
-* Created by IntelliJ IDEA. User: tdunning Date: Jul 28, 2010 Time: 6:38:12 PM To change this
-* template use File | Settings | File Templates.
+* Signals to map that the result should be a PCollection rather than a PTable.  By using
+ * arguments with different types, we can signal to the type system what kind of result
+ * we want to get as a result.
 */
 public abstract class CollectionConversion<R> {
 }

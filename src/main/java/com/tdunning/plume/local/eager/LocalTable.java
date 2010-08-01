@@ -1,14 +1,24 @@
 package com.tdunning.plume.local.eager;
 
-import com.google.common.collect.*;
-import com.tdunning.plume.*;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.tdunning.plume.CollectionConversion;
+import com.tdunning.plume.CombinerFn;
+import com.tdunning.plume.DoFn;
+import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.Ordering;
+import com.tdunning.plume.PCollection;
+import com.tdunning.plume.PTable;
+import com.tdunning.plume.Pair;
+import com.tdunning.plume.TableConversion;
+import com.tdunning.plume.Tuple2;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Created by IntelliJ IDEA. User: tdunning Date: Jul 29, 2010 Time: 1:17:56 PM To change this
- * template use File | Settings | File Templates.
+ * Completely local eager version of a PTable.
  */
 public class LocalTable<K, V> extends PTable<K, V> {
   private List<Pair<K, V>> data = Lists.newArrayList();
@@ -45,7 +55,6 @@ public class LocalTable<K, V> extends PTable<K, V> {
   public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, TableConversion<K1, V1> conversion) {
     final LocalTable<K1, V1> r = new LocalTable<K1, V1>();
     for (Pair<K, V> v : data) {
-      final K key = v.getKey();
       fn.process(v, new EmitFn<Pair<K1, V1>>() {
         @Override
         public void emit(Pair<K1, V1> value) {
@@ -65,6 +74,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
    */
   @Override
   public PTable<K, Iterable<V>> groupByKey() {
+    // can't use a guava multimap here because identical key,value pairs would be suppressed.
     Map<K, List<V>> r = Maps.newHashMap();
     for (Pair<K, V> v : data) {
       List<V> values = r.get(v.getKey());
@@ -144,7 +154,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
       } else {
         m1.remove(k);
       }
-      z.getData().add(Pair.create(k, new Tuple2<Iterable<V>, Iterable<V2>>(v0, v1)));
+      z.getData().add(Pair.create(k, Tuple2.create(v0, v1)));
     }
 
     for (K k : m1.keySet()) {
@@ -153,7 +163,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
       if (v0 == null) {
         v0 = Lists.newArrayList();
       }
-      z.getData().add(Pair.create(k, new Tuple2<Iterable<V>, Iterable<V2>>(v0, v1)));
+      z.getData().add(Pair.create(k, Tuple2.<Iterable<V>, Iterable<V2>>create(v0, v1)));
     }
     return z;
   }

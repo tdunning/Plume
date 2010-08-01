@@ -1,8 +1,8 @@
 package com.tdunning.plume;
 
 /**
- * Created by IntelliJ IDEA. User: tdunning Date: Jul 31, 2010 Time: 2:28:25 PM To change this
- * template use File | Settings | File Templates.
+ * Describes the key functional object that processes an input record and
+ * outputs zero or more objects by means of an emitter object.
  */
 public abstract class DoFn<In, Out> {
   public abstract void process(In v, EmitFn<Out> emitter);

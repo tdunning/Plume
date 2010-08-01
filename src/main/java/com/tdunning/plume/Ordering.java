@@ -1,8 +1,9 @@
 package com.tdunning.plume;
 
 /**
-* Created by IntelliJ IDEA. User: tdunning Date: Jul 28, 2010 Time: 6:38:36 PM To change this
-* template use File | Settings | File Templates.
+* Placeholder interface for ordering collection results.  We should investigate what
+ * guava provides with respect to ordering predicates before deciding whether to just
+ * use java Comparator's.
 */
 public abstract class Ordering<V> {
 }

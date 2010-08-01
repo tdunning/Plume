@@ -1,8 +1,7 @@
 package com.tdunning.plume;
 
 /**
-* Created by IntelliJ IDEA. User: tdunning Date: Jul 29, 2010 Time: 6:26:41 PM To change this
-* template use File | Settings | File Templates.
+* A triple of three objects.  
 */
 public class Tuple3<V1,V2, V3> {
   public Tuple3(V1 v1, V2 v2, V3 v3) {

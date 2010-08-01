@@ -1,8 +1,7 @@
 package com.tdunning.plume;
 
 /**
-* Created by IntelliJ IDEA. User: tdunning Date: Jul 28, 2010 Time: 6:38:27 PM To change this
-* template use File | Settings | File Templates.
-*/
+ * Class used as a hint to map functions that they should return a PTable instead of a PCollection.
+ */
 public abstract class TableConversion<K, V> {
 }
