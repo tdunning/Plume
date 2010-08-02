@@ -41,7 +41,7 @@ public class LocalPlume extends Plume {
 
   @Override
   public <T> PCollection<T> readAvroFile(String name, Class<T> target) {
-    return null;  // To change body of implemented methods use File | Settings | File Templates.
+    return null;  // TODO integrate avro
   }
 
   @Override

@@ -38,10 +38,10 @@ public abstract class Plume {
   }
 
   public <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    return null;
   }
 
   public <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    return null;
   }
 }

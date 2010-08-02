@@ -117,7 +117,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
    * Groups the elements of a table by key returning a new table with the same keys, but all values
    * for the same key grouped together and in the order specified by the ordering.
    *
-   * @return
+   * @return A table of keys and groups.
    */
   @Override
   public PTable<K, Iterable<V>> groupByKey(Ordering<V> order) {
