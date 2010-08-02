@@ -10,16 +10,15 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * Created by IntelliJ IDEA. User: tdunning Date: Jul 29, 2010 Time: 9:31:53 PM To change this
- * template use File | Settings | File Templates.
- */
+import static com.tdunning.plume.Plume.*;
+
 public class WordCountTest {
   @Test
   public void wordCount() throws IOException {
     final Splitter onNonWordChar = Splitter.on(CharMatcher.BREAKING_WHITESPACE);
-    Plume p = new LocalPlume();
 
+    Plume p = new LocalPlume();
+    
     PCollection<String> lines = p.readResourceFile("simple-text.txt");
     PCollection<String> words = lines.map(new DoFn<String, String>() {
       @Override
@@ -28,14 +27,14 @@ public class WordCountTest {
           emitter.emit(word);
         }
       }
-    }, p.collectionOf(String.class));
+    }, collectionOf(strings()));
 
     PTable<String, Integer> wc = words.map(new DoFn<String, Pair<String, Integer>>() {
       @Override
       public void process(String x, EmitFn<Pair<String, Integer>> emitter) {
         emitter.emit(Pair.create(x, 1));
       }
-    }, p.tableOf(String.class, Integer.class))
+    }, tableOf(strings(), integers()))
             .groupByKey()
             .combine(new CombinerFn<Integer>() {
               @Override

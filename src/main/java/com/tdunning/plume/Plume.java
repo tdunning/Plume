@@ -33,15 +33,27 @@ public abstract class Plume {
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
   // conversions that signal what kind of object we want
-  public <K, V> TableConversion<K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
+  public static <K, V> TableConversion<K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
     return null;
   }
 
-  public <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
+  public static <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
     return null;
   }
 
-  public <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
+  public static <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
     return null;
+  }
+
+  public static Class<String> strings() {
+    return String.class;
+  }
+
+  public static Class<Integer> integers() {
+    return Integer.class;
+  }
+
+  public static Class<Double> doubles() {
+    return Double.class;
   }
 }
