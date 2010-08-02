@@ -55,6 +55,8 @@ public class LocalPlume extends Plume {
     for (PCollection<T> arg : args) {
       if (arg instanceof LocalCollection) {
         r.addAll(((LocalCollection<T>) arg).getData());
+      } else {
+        throw new UnsupportedOperationException("Can't flatten a " + arg.getClass() + " onto local collections");
       }
     }
     return r;

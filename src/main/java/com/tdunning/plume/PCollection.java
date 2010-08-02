@@ -26,5 +26,5 @@ public abstract class PCollection<T> implements Iterable<T> {
 
   // derived operations
 
-  public abstract <K> PTable<K, Integer> count(PCollection<K> in);
+  public abstract PTable<T, Integer> count();
 }

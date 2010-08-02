@@ -18,10 +18,12 @@
 package com.tdunning.plume.local.eager;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.tdunning.plume.*;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
 * Completely local version of a PCollection.
@@ -58,9 +60,21 @@ public class LocalCollection<T> extends PCollection<T> {
   }
 
   @Override
-  public <K> PTable<K, Integer> count(PCollection<K> in) {
-    // TODO implement count in PCollection
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+  public PTable<T, Integer> count() {
+    Map<T, Integer> x = Maps.newHashMap();
+    for (T t : data) {
+      Integer v = x.get(t);
+      if (v == null) {
+        x.put(t, 1);
+      } else {
+        x.put(t, v + 1);
+      }
+    }
+    LocalTable<T, Integer> r = new LocalTable<T, Integer>();
+    for (T t : x.keySet()) {
+      r.getData().add(new Pair<T, Integer>(t, x.get(t)));
+    }
+    return r;
   }
 
   public static <X> LocalCollection<X> wrap(Iterable<X> data) {
@@ -68,7 +82,9 @@ public class LocalCollection<T> extends PCollection<T> {
   }
 
   public LocalCollection<T> addAll(Iterable<T> data) {
-    this.data = Lists.newArrayList(data);
+    for (T t : data) {
+      this.data.add(t);
+    }
     return this;
   }
 
