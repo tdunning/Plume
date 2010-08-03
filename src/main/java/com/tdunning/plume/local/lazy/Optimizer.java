@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.local.lazy;
 
-import com.tdunning.plume.types.PType;
+public class Optimizer {
 
-/**
- * Parallel collection.
- */
-public interface PCollection<T> extends Iterable<T> {
-  public <R>PCollection<R> map(DoFn<T, R> fn, PType t);
-  public <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PType t);
-
-  // derived operations
-
-  public PTable<T, Integer> count();
+  public <T> LazyCollection<T> optimize(LazyCollection<T> output) {
+    throw new RuntimeException("Not yet implemented");
+  }
 }

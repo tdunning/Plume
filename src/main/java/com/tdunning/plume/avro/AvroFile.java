@@ -32,7 +32,7 @@ import com.tdunning.plume.types.PType;
 import com.tdunning.plume.local.eager.*;
 
 /** A PCollection for an Avro file. */
-public class AvroFile<T> extends PCollection<T> {
+public class AvroFile<T> implements PCollection<T> {
   private File file;
   private Schema schema;
 

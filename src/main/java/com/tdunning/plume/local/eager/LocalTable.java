@@ -37,7 +37,8 @@ import java.util.Map;
 /**
  * Completely local eager version of a PTable.
  */
-public class LocalTable<K, V> extends PTable<K, V> {
+public class LocalTable<K, V> extends LocalCollection<Pair<K, V>> implements PTable<K, V> {
+
   private List<Pair<K, V>> data = Lists.newArrayList();
 
   /**
