@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.types;
 
-import com.tdunning.plume.types.PType;
+import org.apache.avro.Schema;
+import org.apache.avro.specific.SpecificData;
 
-/**
- * Parallel collection.
- */
-public abstract class PCollection<T> implements Iterable<T> {
-  public abstract <R>PCollection<R> map(DoFn<T, R> fn, PType t);
-  public abstract <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PType t);
+/** Record type.  For Avro specific classes. */
+public class RecordType extends PType {
+  private Schema schema;
 
-  // derived operations
+  public RecordType(Class c) {
+    super(Kind.RECORD);
+    this.schema = SpecificData.get().getSchema(c);
+  }
 
-  public abstract PTable<T, Integer> count();
+  public Schema schema() { return schema; }
 }

@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.types;
 
-import com.tdunning.plume.types.PType;
+/** Base of all types. */
+public abstract class PType {
+  public enum Kind { BOOLEAN, BYTES, DOUBLE, FLOAT, INTEGER, LONG,
+      PAIR, COLLECTION, RECORD, STRING }
 
-/**
- * Parallel collection.
- */
-public abstract class PCollection<T> implements Iterable<T> {
-  public abstract <R>PCollection<R> map(DoFn<T, R> fn, PType t);
-  public abstract <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PType t);
+  private Kind kind;
 
-  // derived operations
+  protected PType(Kind kind) { this.kind = kind; }
 
-  public abstract PTable<T, Integer> count();
+  public Kind kind() { return kind; }
+
 }

@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.types;
 
-import com.tdunning.plume.types.PType;
+/** PCollection type. */
+public class PCollectionType extends PType {
+  private PType elementType;
 
-/**
- * Parallel collection.
- */
-public abstract class PCollection<T> implements Iterable<T> {
-  public abstract <R>PCollection<R> map(DoFn<T, R> fn, PType t);
-  public abstract <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PType t);
+  public PCollectionType(PType elementType) {
+    super(Kind.COLLECTION);
+    this.elementType = elementType;
+  }
 
-  // derived operations
-
-  public abstract PTable<T, Integer> count();
+  public PType elementType() { return elementType; }
 }

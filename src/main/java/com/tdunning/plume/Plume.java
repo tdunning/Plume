@@ -19,6 +19,8 @@ package com.tdunning.plume;
 
 import java.io.IOException;
 
+import com.tdunning.plume.types.*;
+
 /**
  * A plume provides the runtime support for writing data-parallel programs.  Each Plume implementation
  * defines a mode of execution.  For instance, the local.eager.LocalPlume provides instant execution
@@ -28,32 +30,28 @@ public abstract class Plume {
   // general collection operations
   public abstract PCollection<String> readTextFile(String name) throws IOException;
   public abstract PCollection<String> readResourceFile(String name) throws IOException;
-  public abstract <T> PCollection<T> readAvroFile(String name, Class<T> targetClass);
+  public abstract <T> PCollection<T> readAvroFile(String name, PType type);
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
-  // conversions that signal what kind of object we want
-  public static <K, V> TableConversion<K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
-    return null;
+  public static PType strings() { return new StringType(); }
+  public static PType integers() { return new IntegerType(); }
+  public static PType longs() { return new LongType(); }
+  public static PType floats() { return new FloatType(); }
+  public static PType doubles() { return new DoubleType(); }
+  public static PType bytes() { return new BytesType(); }
+  public static PType booleans() { return new BooleanType(); }
+
+  public static PType tableOf(PType keyType, PType valueType) {
+    return new PCollectionType(new PairType(keyType, valueType));
   }
 
-  public static <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
-    return null;
+  public static PType collectionOf(PType elementType) {
+    return new PCollectionType(elementType);
   }
 
-  public static <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
-    return null;
+  public static PType recordsOf(Class recordClass) {
+    return new RecordType(recordClass);
   }
 
-  public static Class<String> strings() {
-    return String.class;
-  }
-
-  public static Class<Integer> integers() {
-    return Integer.class;
-  }
-
-  public static Class<Double> doubles() {
-    return Double.class;
-  }
 }

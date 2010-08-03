@@ -21,6 +21,12 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.tdunning.plume.*;
+import com.tdunning.plume.types.*;
+import com.tdunning.plume.avro.*;
+
+import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.specific.SpecificDatumReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,8 +46,8 @@ public class LocalPlume extends Plume {
   }
 
   @Override
-  public <T> PCollection<T> readAvroFile(String name, Class<T> target) {
-    return null;  // TODO integrate avro
+  public <T> PCollection<T> readAvroFile(String name, PType type) {
+    return new AvroFile<T>(name, type);
   }
 
   @Override

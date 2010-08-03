@@ -64,7 +64,7 @@ public class FlattenTest {
       public void process(Pair<Integer, Integer> v, EmitFn<Pair<Integer, String>> emitter) {
         emitter.emit(new Pair<Integer, String>(v.getKey(), v.getValue().toString()));
       }
-    }, p.tableOf(Integer.class, String.class));
+      }, p.tableOf(p.integers(), p.strings()));
     for (Pair<Integer, String> pair : x5) {
       Assert.assertEquals(r.get(pair.getKey()).toString(), pair.getValue());
     }
@@ -74,7 +74,7 @@ public class FlattenTest {
       public void process(Pair<Integer, Integer> v, EmitFn<String> emitter) {
         emitter.emit(v.getValue().toString());
       }
-    }, p.collectionOf(String.class));
+      }, p.collectionOf(p.strings()));
     Map<String, Integer> r2 = Maps.newHashMap();
     for (Pair<String, Integer> v : x6.count()) {
       r2.put(v.getKey(), v.getValue());
