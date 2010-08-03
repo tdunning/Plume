@@ -5,9 +5,6 @@ import java.util.List;
 import com.tdunning.plume.PTable;
 
 /**
- * 
- * @author pere
- *
  * @param <K>
  * @param <V>
  */

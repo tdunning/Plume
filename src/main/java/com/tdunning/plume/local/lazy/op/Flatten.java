@@ -5,9 +5,6 @@ import java.util.List;
 import com.tdunning.plume.PCollection;
 
 /**
- * 
- * @author pere
- *
  * @param <T>
  */
 public class Flatten<T> extends DeferredOp {

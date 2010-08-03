@@ -3,10 +3,6 @@ package com.tdunning.plume.local.lazy.op;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.PCollection;
 
-/**
- * 
- * @author pere
- */
 public class ParallelDoCC<T, V> extends ParallelDo<T, V> {
 
   PCollection<T> origin;

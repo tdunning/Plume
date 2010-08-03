@@ -3,9 +3,6 @@ package com.tdunning.plume.local.lazy.op;
 import com.tdunning.plume.local.lazy.LazyTable;
 
 /**
- * 
- * @author pere
- * 
  * @param <K>
  * @param <V>
  */

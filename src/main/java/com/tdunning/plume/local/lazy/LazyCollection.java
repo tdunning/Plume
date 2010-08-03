@@ -36,8 +36,6 @@ import com.tdunning.plume.local.lazy.op.ParallelDoCT;
  * A LazyCollection that can be either materialized or unmaterialized. 
  * Unmaterialized collections have a reference to the {@link DeferredOp} that creates them.
  * 
- * @author pere
- *
  * @param <T>
  */
 public class LazyCollection<T> implements PCollection<T> {

@@ -3,11 +3,6 @@ package com.tdunning.plume.local.lazy.op;
 import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.PTable;
 
-/**
- * 
- * @author pere
- * 
- */
 public class CombineValues<K, V> extends DeferredOp {
 
   PTable<K, Iterable<V>> origin;

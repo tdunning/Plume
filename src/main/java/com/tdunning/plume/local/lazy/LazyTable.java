@@ -39,8 +39,6 @@ import com.tdunning.plume.local.lazy.op.ParallelDoTT;
  * A LazyTable that can be either materialized or unmaterialized. Unmaterialized
  * tables have a reference to the {@link DeferredOp} that creates them.
  * 
- * @author pere
- * 
  * @param <K>
  * @param <V>
  */
@@ -51,6 +49,9 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
 
   DeferredOp deferredOp;
   List<DeferredOp> downOps;
+
+  public LazyTable() {
+  }
 
   protected void addDownOp(DeferredOp op) {
     if (downOps == null) {
@@ -104,8 +105,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
   @Override
   public PTable<K, Iterable<V>> groupByKey() {
     LazyTable<K, Iterable<V>> dest = new LazyTable<K, Iterable<V>>();
-    GroupByKey<K, V> groupByKey = new GroupByKey<K, V>(this, dest);
-    dest.deferredOp = groupByKey;
+    dest.deferredOp = new GroupByKey<K, V>(this, dest);
     addDownOp(deferredOp);
     return dest;
   }
