@@ -28,7 +28,7 @@ import java.util.Map;
 /**
 * Completely local version of a PCollection.
 */
-public class LocalCollection<T> extends PCollection<T> {
+public class LocalCollection<T> implements PCollection<T> {
   private List<T> data = Lists.newArrayList();
 
   @Override
