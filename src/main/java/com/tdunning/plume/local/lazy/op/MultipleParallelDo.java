@@ -17,6 +17,33 @@
 
 package com.tdunning.plume.local.lazy.op;
 
-public abstract class DeferredOp {
+import java.util.HashMap;
+import java.util.Map;
 
+import com.tdunning.plume.DoFn;
+import com.tdunning.plume.PCollection;
+
+public class MultipleParallelDo<T> extends DeferredOp {
+
+  PCollection<T> origin;
+  Map<PCollection<?>, DoFn<T, ?>> dests;
+  
+  public MultipleParallelDo(PCollection<T> origin) {
+    this.origin = origin;
+  }
+  
+  public <V> void addDest(DoFn<T, V> function, PCollection<V> dest) {
+    if(dests == null) {
+      dests = new HashMap<PCollection<?>, DoFn<T, ?>>();
+    }
+    dests.put(dest, function);
+  }
+
+  public PCollection<T> getOrigin() {
+    return origin;
+  }
+
+  public Map<PCollection<?>, DoFn<T, ?>> getDests() {
+    return dests;
+  }
 }

@@ -1,5 +1,3 @@
-package com.tdunning.plume.local.lazy.op;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +15,8 @@ package com.tdunning.plume.local.lazy.op;
  * limitations under the License.
  */
 
+package com.tdunning.plume.local.lazy.op;
+
 import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
@@ -27,7 +27,7 @@ public class CombineValues<K, V> extends OneToOneOp<Pair<K, Iterable<V>>, Pair<K
   PTable<K, V> dest;
   CombinerFn<V> combiner; 
   
-  public CombineValues(CombinerFn<V> combiner, PTable<K, V> dest, PTable<K, Iterable<V>> origin) {
+  public CombineValues(CombinerFn<V> combiner, PTable<K, Iterable<V>> origin, PTable<K, V> dest) {
     this.origin = origin;
     this.dest = dest;
     this.combiner = combiner;

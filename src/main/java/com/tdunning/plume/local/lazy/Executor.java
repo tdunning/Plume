@@ -17,13 +17,21 @@
 
 package com.tdunning.plume.local.lazy;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.Pair;
+import com.tdunning.plume.local.lazy.op.CombineValues;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
+import com.tdunning.plume.local.lazy.op.GroupByKey;
+import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
@@ -60,11 +68,48 @@ public class Executor {
       // ParallelDo
       if (op instanceof ParallelDo) {
         ParallelDo pDo = (ParallelDo) op;
-        parent = execute((LazyCollection) pDo.getOrigin());
+        parent = execute((LazyCollection)pDo.getOrigin());
         for (Object obj : parent) {
           pDo.getFunction().process(obj, emitter);
         }
-      } 
+      // MultipleParallelDo -> parallel operations that read the same collection
+      // In this version of executor, we will only compute the current collection, not its neighbors
+      } else if(op instanceof MultipleParallelDo) {
+        MultipleParallelDo mPDo = (MultipleParallelDo) op;
+        parent = execute((LazyCollection)mPDo.getOrigin());
+        DoFn function = (DoFn)mPDo.getDests().get(output); // get the function that corresponds to this collection
+        for (Object obj : parent) {
+          function.process(obj, emitter);
+        }
+      // GroupByKey
+      } else if(op instanceof GroupByKey) {
+        GroupByKey gBK = (GroupByKey) op;
+        parent = execute((LazyCollection)gBK.getOrigin());
+        Map<Object, List> groupMap = Maps.newHashMap();
+        // Perform in-memory group by operation
+        for (Object obj : parent) {
+          Pair p = (Pair)obj;
+          List list = groupMap.get(p.getKey());
+          if(list == null) {
+            list = new ArrayList();
+          }
+          list.add(p.getValue());
+          groupMap.put(p.getKey(), list);
+        }
+        for (Map.Entry<Object, List> entry: groupMap.entrySet()) {
+          result.add((T)new Pair(entry.getKey(), entry.getValue()));
+        }
+      // CombineValues
+      } else if(op instanceof CombineValues) {
+        CombineValues combine = (CombineValues) op;
+        parent = execute((LazyCollection)combine.getOrigin());
+        for (Object obj: parent) {
+          Pair p = (Pair)obj;
+          result.add((T)Pair.create(p.getKey(), 
+            combine.getCombiner().combine((Iterable)p.getValue()))
+          );
+        }
+      }
       return result;
     }
   }

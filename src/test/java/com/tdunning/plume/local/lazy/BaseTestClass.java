@@ -17,46 +17,50 @@
 
 package com.tdunning.plume.local.lazy;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.Before;
+
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
-import com.tdunning.plume.PCollection;
 
-public class MapAndFlattenTest {
+/**
+ * Contains some utility methods and variables for local.lazy testing
+ */
+public class BaseTestClass {
 
-  /**
-   * Deferred execution of ((1,2,3)+(4,5,6)) => x+1 
-   */
-  @Test
-  public void test() {
-    DoFn<Integer, Integer> plusOne = new DoFn<Integer, Integer>() {
+  DoFn<Integer, Integer> plusOne;
+  DoFn<Integer, Integer> timesTwo;
+  
+  @Before
+  public void initFns() {
+    plusOne = new DoFn<Integer, Integer>() {
       @Override
       public void process(Integer v, EmitFn<Integer> emitter) {
         emitter.emit(v + 1);
       }
     };
-    List<Integer> l1 = Lists.newArrayList(1, 2, 3);
-    List<Integer> l2 = Lists.newArrayList(4, 5, 6);
-    // Get Plume runtime
-    LazyPlume plume = new LazyPlume();
-    PCollection<Integer> output = plume.flatten(plume.fromJava(l1), plume.fromJava(l2)).map(plusOne, null);
+    timesTwo = new DoFn<Integer, Integer>() {
+      @Override
+      public void process(Integer v, EmitFn<Integer> emitter) {
+        emitter.emit(v * 2);
+      }
+    };
+  }
+  
+  static void executeAndAssert(LazyCollection<Integer> output, Integer[] expectedResult) {
     // Get an executor
     Executor executor = new Executor();
-    Iterable<Integer> result = executor.execute((LazyCollection<Integer>)output);
+    // Execute current plan
+    Iterable<Integer> result = executor.execute(output);
     List<Integer> l = Lists.newArrayList(result);
     Collections.sort(l);
-    assertEquals(l.get(0).intValue(), 2);
-    assertEquals(l.get(1).intValue(), 3);
-    assertEquals(l.get(2).intValue(), 4);
-    assertEquals(l.get(3).intValue(), 5); 
-    assertEquals(l.get(4).intValue(), 6); 
-    assertEquals(l.get(5).intValue(), 7);
+    for(int i = 0; i < expectedResult.length; i++) {
+      assertEquals(l.get(i).intValue(), expectedResult[i].intValue());    
+    }
   }
 }

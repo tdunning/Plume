@@ -1,5 +1,3 @@
-package com.tdunning.plume.local.lazy.op;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package com.tdunning.plume.local.lazy.op;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package com.tdunning.plume.local.lazy.op;
 
 import java.util.List;
 
