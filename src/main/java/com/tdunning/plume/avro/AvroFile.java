@@ -21,6 +21,8 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.file.DataFileStream;
@@ -42,7 +44,7 @@ public class AvroFile<T> implements PCollection<T> {
   }
 
   @Override
-  public <R> PCollection<R> map(DoFn<T, R> fn, PType type) {
+  public <R> PCollection<R> map(DoFn<T, R> fn, PCollectionType type) {
     final LocalCollection<R> r = new LocalCollection<R>();
     
     for (T t : this) {
@@ -57,7 +59,7 @@ public class AvroFile<T> implements PCollection<T> {
   }
 
   @Override
-  public <K, V> PTable<K,V> map(DoFn<T, Pair<K,V>> fn, PType type) {
+  public <K, V> PTable<K,V> map(DoFn<T, Pair<K,V>> fn, PTableType type) {
     final LocalTable<K, V> r = new LocalTable<K, V>();
     for (final T t : this) {
       fn.process(t, new EmitFn<Pair<K, V>>() {

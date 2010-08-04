@@ -32,7 +32,8 @@ import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDoTC;
 import com.tdunning.plume.local.lazy.op.ParallelDoTT;
-import com.tdunning.plume.types.PType;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 
 /**
  * A LazyTable that can be either materialized or unmaterialized. Unmaterialized
@@ -74,7 +75,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
    * which maps a PTable to a PCollection
    */
   @Override
-  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, PType type) {
+  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, PCollectionType type) {
     LazyCollection<R> dest = new LazyCollection<R>();
     ParallelDoTC<K, V, R> op = new ParallelDoTC<K, V, R>(this, dest, fn);
     dest.deferredOp = op;
@@ -87,7 +88,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
    * which maps a PTable to another PTable
    */
   @Override
-  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PType type) {
+  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PTableType type) {
     LazyTable<K1, V1> dest = new LazyTable<K1, V1>();
     ParallelDoTT<K, V, K1, V1> op = new ParallelDoTT<K, V, K1, V1>(this, dest,
         fn);

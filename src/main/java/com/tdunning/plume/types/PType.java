@@ -20,7 +20,7 @@ package com.tdunning.plume.types;
 /** Base of all types. */
 public abstract class PType {
   public enum Kind { BOOLEAN, BYTES, DOUBLE, FLOAT, INTEGER, LONG,
-      PAIR, COLLECTION, RECORD, STRING }
+      PAIR, COLLECTION, TABLE, RECORD, STRING }
 
   private Kind kind;
 

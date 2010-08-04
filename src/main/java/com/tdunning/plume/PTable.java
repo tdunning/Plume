@@ -17,7 +17,8 @@
 
 package com.tdunning.plume;
 
-import com.tdunning.plume.types.PType;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 
 /**
  * Parallel table that supports map and reduce operations.
@@ -31,7 +32,7 @@ public interface PTable<K, V> extends PCollection<Pair<K, V>>, Iterable<Pair<K, 
    * @return A parallel collection whose content is the result of applying fn to each element of
    *         this.
    */
-  public <R>PCollection<R> map(DoFn<Pair<K, V>, R> fn, PType type);
+  public <R>PCollection<R> map(DoFn<Pair<K, V>, R> fn, PCollectionType type);
 
   /**
    * Performs an operation on each element of a collection returning a transformed table.
@@ -39,7 +40,7 @@ public interface PTable<K, V> extends PCollection<Pair<K, V>>, Iterable<Pair<K, 
    * @param fn The function to perform on key/value pairs.
    * @return A parallel table containing the transformed data.
    */
-  public <K1, V1>PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PType type);
+  public <K1, V1>PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PTableType type);
 
   /**
    * Groups the elements of a table by key returning a new table with the same keys, but all values

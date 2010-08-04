@@ -20,7 +20,8 @@ package com.tdunning.plume.local.eager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import com.tdunning.plume.types.PType;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
@@ -49,7 +50,7 @@ public class LocalTable<K, V> extends LocalCollection<Pair<K, V>> implements PTa
    *         this.
    */
   @Override
-  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, PType type) {
+  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, PCollectionType type) {
     final LocalCollection<R> r = new LocalCollection<R>();
     for (Pair<K, V> v : data) {
       fn.process(v, new EmitFn<R>() {
@@ -70,7 +71,7 @@ public class LocalTable<K, V> extends LocalCollection<Pair<K, V>> implements PTa
    * @return A parallel table containing the transformed data.
    */
   @Override
-  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PType type) {
+  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PTableType type) {
     final LocalTable<K1, V1> r = new LocalTable<K1, V1>();
     for (Pair<K, V> v : data) {
       fn.process(v, new EmitFn<Pair<K1, V1>>() {

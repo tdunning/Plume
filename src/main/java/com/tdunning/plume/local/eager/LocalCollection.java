@@ -20,7 +20,8 @@ package com.tdunning.plume.local.eager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.tdunning.plume.*;
-import com.tdunning.plume.types.PType;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,7 @@ public class LocalCollection<T> implements PCollection<T> {
   private List<T> data = Lists.newArrayList();
 
   @Override
-  public <R> PCollection<R> map(DoFn<T, R> fn, PType type) {
+  public <R> PCollection<R> map(DoFn<T, R> fn, PCollectionType type) {
     final LocalCollection<R> r = new LocalCollection<R>();
     for (T t : data) {
       fn.process(t, new EmitFn<R>() {
@@ -47,7 +48,7 @@ public class LocalCollection<T> implements PCollection<T> {
   }
 
   @Override
-  public <K, V> PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PType type) {
+  public <K, V> PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PTableType type) {
     final LocalTable<K, V> r = new LocalTable<K, V>();
     for (final T t : data) {
       fn.process(t, new EmitFn<Pair<K, V>>() {

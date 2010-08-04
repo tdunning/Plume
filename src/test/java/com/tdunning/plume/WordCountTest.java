@@ -32,12 +32,13 @@ public class WordCountTest {
       }
     }, collectionOf(strings()));
 
-    PTable<String, Integer> wc = words.map(new DoFn<String, Pair<String, Integer>>() {
-      @Override
-      public void process(String x, EmitFn<Pair<String, Integer>> emitter) {
-        emitter.emit(Pair.create(x, 1));
-      }
-    }, tableOf(strings(), integers()))
+    PTable<String, Integer> wc = words
+            .map(new DoFn<String, Pair<String, Integer>>() {
+              @Override
+              public void process(String x, EmitFn<Pair<String, Integer>> emitter) {
+                emitter.emit(Pair.create(x, 1));
+              }
+            }, tableOf(strings(), integers()))
             .groupByKey()
             .combine(new CombinerFn<Integer>() {
               @Override

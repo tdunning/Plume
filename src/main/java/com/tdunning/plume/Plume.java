@@ -42,11 +42,11 @@ public abstract class Plume {
   public static PType bytes() { return new BytesType(); }
   public static PType booleans() { return new BooleanType(); }
 
-  public static PType tableOf(PType keyType, PType valueType) {
-    return new PCollectionType(new PairType(keyType, valueType));
+  public static PTableType tableOf(PType keyType, PType valueType) {
+    return new PTableType(keyType, valueType);
   }
 
-  public static PType collectionOf(PType elementType) {
+  public static PCollectionType collectionOf(PType elementType) {
     return new PCollectionType(elementType);
   }
 

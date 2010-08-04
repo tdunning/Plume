@@ -15,12 +15,26 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.types;
 
 /**
-* Signals to map that the result should be a PCollection rather than a PTable.  By using
- * arguments with different types, we can signal to the type system what kind of result
- * we want to get as a result.
-*/
-public abstract class CollectionConversion<R> {
+ * Class used as a hint to map functions that they should return a PTable instead of a PCollection.
+ */
+public class PTableType extends PType {
+  private PType keyType;
+  private PType valueType;
+
+  public PTableType(PType keyType, PType valueType) {
+    super(Kind.COLLECTION);
+    this.keyType = keyType;
+    this.valueType = valueType;
+  }
+
+  public PType getKeyType() {
+    return keyType;
+  }
+
+  public PType getValueType() {
+    return valueType;
+  }
 }
