@@ -46,7 +46,7 @@ public class AvroFile<T> implements PCollection<T> {
   @Override
   public <R> PCollection<R> map(DoFn<T, R> fn, PCollectionType type) {
     final LocalCollection<R> r = new LocalCollection<R>();
-    
+
     for (T t : this) {
       fn.process(t, new EmitFn<R>() {
           @Override
@@ -101,7 +101,9 @@ public class AvroFile<T> implements PCollection<T> {
       return new Iterator<T>() {
         public boolean hasNext() {
           boolean value = data.hasNext();
-          if (!value) close();
+          if (!value) {
+            close();
+          }
           return value;
         }
         public T next() { return data.next(); }

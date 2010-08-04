@@ -24,50 +24,61 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.mapred.Pair;
 
-/** Translate between Plume types to Avro types. */
+/**
+ * Translate between Plume types to Avro types.
+ */
 public class AvroTypes {
-  private AvroTypes() {}                          // no public ctor
+  // no public ctor
+  private AvroTypes() {
+  }
 
-  /** Convert Plume types to Avro types. */
+  /**
+   * Convert Plume types to Avro types.
+   */
   public static Schema getSchema(PType type) {
     switch (type.kind()) {
-    case BOOLEAN:
-      return Schema.create(Type.BOOLEAN);
-    case BYTES:
-      return Schema.create(Type.BYTES);
-    case DOUBLE:
-      return Schema.create(Type.DOUBLE);
-    case FLOAT:
-      return Schema.create(Type.FLOAT);
-    case INTEGER:
-      return Schema.create(Type.INT);
-    case LONG:
-      return Schema.create(Type.LONG);
-    case PAIR:
-      PairType pairType = (PairType)type;
-      return Pair.getPairSchema(getSchema(pairType.keyType()),
-                                getSchema(pairType.valueType()));
-    case COLLECTION:
-      PType elementType = ((PCollectionType)type).elementType();
-      // PCollection<String,*> is an Avro map
-      if (elementType.kind() == Kind.PAIR) {
-        PairType p = (PairType)elementType;
-        if (p.keyType().kind() == Kind.STRING)
-          return Schema.createMap(getSchema(p.valueType()));
-      }
-      return Schema.createArray(getSchema(elementType));
-    case RECORD:
-      return ((RecordType)type).schema();
-    case STRING:
-      return Schema.create(Type.STRING);
-    default:
-      throw new RuntimeException("Unknown type: "+type);
+      case BOOLEAN:
+        return Schema.create(Type.BOOLEAN);
+      case BYTES:
+        return Schema.create(Type.BYTES);
+      case DOUBLE:
+        return Schema.create(Type.DOUBLE);
+      case FLOAT:
+        return Schema.create(Type.FLOAT);
+      case INTEGER:
+        return Schema.create(Type.INT);
+      case LONG:
+        return Schema.create(Type.LONG);
+      case PAIR:
+        PairType pairType = (PairType) type;
+        return Pair.getPairSchema(
+                getSchema(pairType.keyType()),
+                getSchema(pairType.valueType()));
+      case COLLECTION:
+        PType elementType = ((PCollectionType) type).elementType();
+        return Schema.createArray(getSchema(elementType));
+      case TABLE:
+        PType keyType = ((PTableType) type).keyType();
+        PType valueType = ((PTableType) type).valueType();
+        // PTable<String,*> is an Avro map
+        if (keyType.kind() == Kind.STRING) {
+          return Schema.createMap(getSchema(new PairType(keyType, valueType)));
+        }
+        return Schema.createArray(getSchema(keyType));
+      case RECORD:
+        return ((RecordType) type).schema();
+      case STRING:
+        return Schema.create(Type.STRING);
+      default:
+        throw new RuntimeException("Unknown type: " + type);
     }
   }
 
-  /** Convert Avro types to Plume types. */
+  /**
+   * Convert Avro types to Plume types.
+   */
   public static PType getPType(Schema schema) {
-    // FIXME
+    // TODO FIXME
     throw new RuntimeException("Not yet implemented.");
   }
 

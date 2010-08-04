@@ -30,11 +30,11 @@ public class PTableType extends PType {
     this.valueType = valueType;
   }
 
-  public PType getKeyType() {
+  public PType keyType() {
     return keyType;
   }
 
-  public PType getValueType() {
+  public PType valueType() {
     return valueType;
   }
 }
