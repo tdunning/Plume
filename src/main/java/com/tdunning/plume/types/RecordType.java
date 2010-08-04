@@ -21,10 +21,10 @@ import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificData;
 
 /** Record type.  For Avro specific classes. */
-public class RecordType extends PType {
+public class RecordType<T> extends PType<T> {
   private Schema schema;
 
-  public RecordType(Class c) {
+  public RecordType(Class<T> c) {
     super(Kind.RECORD);
     this.schema = SpecificData.get().getSchema(c);
   }

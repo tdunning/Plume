@@ -18,25 +18,22 @@
 package com.tdunning.plume.types;
 
 import com.tdunning.plume.PTable;
+import com.tdunning.plume.PCollection;
+import com.tdunning.plume.Pair;
 
 /**
  * Class used as a hint to map functions that they should return a PTable instead of a PCollection.
  */
-public class PTableType<K, V> extends PType<PTable<K, V>> {
-  private PType keyType;
-  private PType valueType;
-
-  public PTableType(PType keyType, PType valueType) {
-    super(Kind.COLLECTION);
-    this.keyType = keyType;
-    this.valueType = valueType;
+public class PTableType<K, V> extends PCollectionType<Pair<K, V>> {
+  public PTableType(PType<K> keyType, PType<V> valueType) {
+    super(new PairType<K,V>(keyType, valueType));
   }
 
-  public PType keyType() {
-    return keyType;
+  public PType<K> keyType() {
+    return ((PairType)elementType()).keyType();
   }
 
-  public PType valueType() {
-    return valueType;
+  public PType<V> valueType() {
+    return ((PairType)elementType()).valueType();
   }
 }

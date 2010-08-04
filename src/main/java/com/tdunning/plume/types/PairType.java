@@ -17,18 +17,20 @@
 
 package com.tdunning.plume.types;
 
-/** Pair type. */
-public class PairType extends PType {
-  private PType keyType;
-  private PType valueType;
+import com.tdunning.plume.Pair;
 
-  public PairType(PType keyType, PType valueType) {
+/** Pair type. */
+public class PairType<K,V> extends PType<Pair<K,V>> {
+  private PType<K> keyType;
+  private PType<V> valueType;
+
+  public PairType(PType<K> keyType, PType<V> valueType) {
     super(Kind.PAIR);
 
     this.keyType = keyType;
     this.valueType = valueType;
   }
 
-  public PType keyType() { return keyType; }
-  public PType valueType() { return valueType; }
+  public PType<K> keyType() { return keyType; }
+  public PType<V> valueType() { return valueType; }
 }

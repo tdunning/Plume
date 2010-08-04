@@ -21,12 +21,12 @@ import com.tdunning.plume.PCollection;
 
 /** PCollection type. */
 public class PCollectionType<V> extends PType<PCollection<V>> {
-  private PType elementType;
+  private PType<V> elementType;
 
-  public PCollectionType(PType elementType) {
+  public PCollectionType(PType<V> elementType) {
     super(Kind.COLLECTION);
     this.elementType = elementType;
   }
 
-  public PType elementType() { return elementType; }
+  public PType<V> elementType() { return elementType; }
 }

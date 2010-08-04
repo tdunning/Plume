@@ -69,8 +69,6 @@ public class AvroTypes {
         return ((RecordType) type).schema();
       case STRING:
         return Schema.create(Type.STRING);
-      case UTF8:
-        return Schema.create(Type.STRING);
       default:
         throw new RuntimeException("Unknown type: " + type);
     }

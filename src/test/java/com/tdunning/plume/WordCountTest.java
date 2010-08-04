@@ -31,24 +31,24 @@ public class WordCountTest {
     Plume p = new LocalPlume();
     
     String file = Resources.getResource("simple-text.avro").getPath();
-    PCollection<String> lines = p.readAvroFile(file, utf8())
-            .map(new DoFn<Utf8, String>() {
+    PCollection<CharSequence> lines = p.readAvroFile(file, strings())
+            .map(new DoFn<CharSequence, CharSequence>() {
               @Override
-              public void process(Utf8 x, EmitFn<String> emitter) {
-                emitter.emit(x.toString());
+              public void process(CharSequence x, EmitFn<CharSequence> emitter) {
+                emitter.emit(x);
               }
             }, collectionOf(strings()));
 
     countWords(lines);
   }
 
-  private void countWords(PCollection<String> lines) {
+  private <T extends CharSequence> void countWords(PCollection<T> lines) {
     final Splitter onNonWordChar = Splitter.on(CharMatcher.BREAKING_WHITESPACE);
 
-    PCollection<String> words = lines.map(new DoFn<String, String>() {
+    PCollection<String> words = lines.map(new DoFn<T, String>() {
       @Override
-      public void process(String x, EmitFn<String> emitter) {
-        for (String word : onNonWordChar.split(x)) {
+      public void process(T x, EmitFn<String> emitter) {
+        for (String word : onNonWordChar.split(x.toString())) {
           emitter.emit(word);
         }
       }

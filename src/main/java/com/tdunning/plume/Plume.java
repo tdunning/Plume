@@ -34,7 +34,6 @@ public abstract class Plume {
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
-  public static Utf8Type utf8() { return new Utf8Type(); }
   public static StringType strings() { return new StringType(); }
   public static IntegerType integers() { return new IntegerType(); }
   public static LongType longs() { return new LongType(); }
@@ -51,8 +50,8 @@ public abstract class Plume {
     return new PCollectionType<V>(elementType);
   }
 
-  public static RecordType recordsOf(Class recordClass) {
-    return new RecordType(recordClass);
+  public static <T> RecordType<T> recordsOf(Class<T> recordClass) {
+    return new RecordType<T>(recordClass);
   }
 
 }

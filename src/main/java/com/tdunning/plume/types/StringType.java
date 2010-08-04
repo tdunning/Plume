@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class StringType extends PType<String> {
+public class StringType extends PType<CharSequence> {
   public StringType() { super(Kind.STRING); }
 }
