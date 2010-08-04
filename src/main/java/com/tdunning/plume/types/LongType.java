@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class LongType extends PType {
+public class LongType extends PType<Long> {
   public LongType() { super(Kind.LONG); }
 }

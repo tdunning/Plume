@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class BytesType extends PType {
+public class BytesType extends PType<Byte> {
   public BytesType() { super(Kind.BYTES); }
 }

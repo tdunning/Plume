@@ -31,7 +31,7 @@ public class WordCountTest {
     Plume p = new LocalPlume();
     
     String file = Resources.getResource("simple-text.avro").getPath();
-    PCollection<String> lines = p.<Utf8>readAvroFile(file, strings())
+    PCollection<String> lines = p.readAvroFile(file, utf8())
             .map(new DoFn<Utf8, String>() {
               @Override
               public void process(Utf8 x, EmitFn<String> emitter) {

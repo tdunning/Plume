@@ -17,8 +17,10 @@
 
 package com.tdunning.plume.types;
 
+import com.tdunning.plume.PCollection;
+
 /** PCollection type. */
-public class PCollectionType extends PType {
+public class PCollectionType<V> extends PType<PCollection<V>> {
   private PType elementType;
 
   public PCollectionType(PType elementType) {

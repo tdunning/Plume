@@ -43,7 +43,7 @@ public class LazyPlume extends Plume {
   }
 
   @Override
-  public <T> PCollection<T> readAvroFile(String name, PType type) {
+  public <T> PCollection<T> readAvroFile(String name, PType<T> type) {
     // TODO Auto-generated method stub
     return null;
   }

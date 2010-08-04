@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume.types;
+package com.tdunning.plume;
 
-import com.tdunning.plume.PTable;
+import com.tdunning.plume.types.PType;
+import org.apache.avro.util.Utf8;
 
 /**
- * Class used as a hint to map functions that they should return a PTable instead of a PCollection.
+ * Avro uses this type for faster reading speed and lower memory use.
  */
-public class PTableType<K, V> extends PType<PTable<K, V>> {
-  private PType keyType;
-  private PType valueType;
-
-  public PTableType(PType keyType, PType valueType) {
-    super(Kind.COLLECTION);
-    this.keyType = keyType;
-    this.valueType = valueType;
-  }
-
-  public PType keyType() {
-    return keyType;
-  }
-
-  public PType valueType() {
-    return valueType;
+public class Utf8Type extends PType<Utf8> {
+  protected Utf8Type() {
+    super(Kind.UTF8);
   }
 }

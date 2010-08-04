@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class DoubleType extends PType {
+public class DoubleType extends PType<Double> {
   public DoubleType() { super(Kind.DOUBLE); }
 }

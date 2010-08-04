@@ -46,7 +46,7 @@ public class LocalPlume extends Plume {
   }
 
   @Override
-  public <T> PCollection<T> readAvroFile(String name, PType type) {
+  public <T> PCollection<T> readAvroFile(String name, PType<T> type) {
     return new AvroFile<T>(name, type);
   }
 

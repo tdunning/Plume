@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class BooleanType extends PType {
+public class BooleanType extends PType<Boolean> {
   public BooleanType() { super(Kind.BOOLEAN); }
 }

@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class IntegerType extends PType {
+public class IntegerType extends PType<Integer> {
   public IntegerType() { super(Kind.INTEGER); }
 }

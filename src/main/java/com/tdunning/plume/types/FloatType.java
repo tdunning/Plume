@@ -18,6 +18,6 @@
 package com.tdunning.plume.types;
 
 /** String type. */
-public class FloatType extends PType {
+public class FloatType extends PType<Float> {
   public FloatType() { super(Kind.FLOAT); }
 }

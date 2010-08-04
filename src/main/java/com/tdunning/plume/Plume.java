@@ -30,27 +30,28 @@ public abstract class Plume {
   // general collection operations
   public abstract PCollection<String> readTextFile(String name) throws IOException;
   public abstract PCollection<String> readResourceFile(String name) throws IOException;
-  public abstract <T> PCollection<T> readAvroFile(String name, PType type);
+  public abstract <T> PCollection<T> readAvroFile(String name, PType<T> type);
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
-  public static PType strings() { return new StringType(); }
-  public static PType integers() { return new IntegerType(); }
-  public static PType longs() { return new LongType(); }
-  public static PType floats() { return new FloatType(); }
-  public static PType doubles() { return new DoubleType(); }
-  public static PType bytes() { return new BytesType(); }
-  public static PType booleans() { return new BooleanType(); }
+  public static Utf8Type utf8() { return new Utf8Type(); }
+  public static StringType strings() { return new StringType(); }
+  public static IntegerType integers() { return new IntegerType(); }
+  public static LongType longs() { return new LongType(); }
+  public static FloatType floats() { return new FloatType(); }
+  public static DoubleType doubles() { return new DoubleType(); }
+  public static BytesType bytes() { return new BytesType(); }
+  public static BooleanType booleans() { return new BooleanType(); }
 
-  public static PTableType tableOf(PType keyType, PType valueType) {
-    return new PTableType(keyType, valueType);
+  public static <K, V> PTableType<K, V> tableOf(PType<K> keyType, PType<V> valueType) {
+    return new PTableType<K, V>(keyType, valueType);
   }
 
-  public static PCollectionType collectionOf(PType elementType) {
-    return new PCollectionType(elementType);
+  public static <V> PCollectionType<V> collectionOf(PType<V> elementType) {
+    return new PCollectionType<V>(elementType);
   }
 
-  public static PType recordsOf(Class recordClass) {
+  public static RecordType recordsOf(Class recordClass) {
     return new RecordType(recordClass);
   }
 
