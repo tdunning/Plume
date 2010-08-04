@@ -18,28 +18,15 @@ import static org.junit.Assert.assertEquals;
 public class WordCountTest {
   @Test
   public void wordCount() throws IOException {
-
     Plume p = new LocalPlume();
-
-    PCollection<String> lines = p.readResourceFile("simple-text.txt");
-    countWords(lines);
+    countWords(p.readResourceFile("simple-text.txt"));
   }
 
   @Test
   public void wordCountAvro() throws IOException {
-
     Plume p = new LocalPlume();
-    
     String file = Resources.getResource("simple-text.avro").getPath();
-    PCollection<CharSequence> lines = p.readAvroFile(file, strings())
-            .map(new DoFn<CharSequence, CharSequence>() {
-              @Override
-              public void process(CharSequence x, EmitFn<CharSequence> emitter) {
-                emitter.emit(x);
-              }
-            }, collectionOf(strings()));
-
-    countWords(lines);
+    countWords(p.readAvroFile(file, strings()));
   }
 
   private <T extends CharSequence> void countWords(PCollection<T> lines) {
