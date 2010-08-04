@@ -27,16 +27,13 @@ import com.tdunning.plume.PCollection;
 import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
-import com.tdunning.plume.local.lazy.op.ParallelDoCC;
-import com.tdunning.plume.local.lazy.op.ParallelDoCT;
+import com.tdunning.plume.local.lazy.op.ParallelDo;
 import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
 
 /**
  * A LazyCollection that can be either materialized or unmaterialized. 
  * Unmaterialized collections have a reference to the {@link DeferredOp} that creates them.
- * 
- * @param <T>
  */
 public class LazyCollection<T> implements PCollection<T> {
 
@@ -89,7 +86,7 @@ public class LazyCollection<T> implements PCollection<T> {
   @Override
   public <R> PCollection<R> map(DoFn<T, R> fn, PCollectionType type) {
     LazyCollection<R> dest = new LazyCollection<R>();
-    ParallelDoCC<T, R> op = new ParallelDoCC<T, R>(this, dest, fn);
+    ParallelDo<T, R> op = new ParallelDo<T, R>(fn, this, dest);
     dest.deferredOp = op;
     addDownOp(op);
     return dest;
@@ -99,10 +96,9 @@ public class LazyCollection<T> implements PCollection<T> {
    * Creates a new LazyTable from a {@link ParallelDoCT} deferred operation
    * which maps a PCollection to a PTable
    */
-  @Override
   public <K, V> PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PTableType type) {
     LazyTable<K, V> dest = new LazyTable<K, V>();
-    ParallelDoCT<T, K, V> op = new ParallelDoCT<T, K, V>(this, dest, fn);
+    ParallelDo<T, Pair<K, V>> op = new ParallelDo<T, Pair<K, V>>(fn, this, dest);
     dest.deferredOp = op;
     addDownOp(op);
     return dest;

@@ -47,7 +47,7 @@ public class LazyPlume extends Plume {
     // TODO Auto-generated method stub
     return null;
   }
-
+  
   @Override
   public <T> PCollection<T> fromJava(Iterable<T> source) {
     return new LazyCollection<T>(source);
