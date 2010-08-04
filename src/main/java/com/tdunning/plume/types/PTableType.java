@@ -15,10 +15,28 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume;
+package com.tdunning.plume.types;
+
+import com.tdunning.plume.PTable;
 
 /**
  * Class used as a hint to map functions that they should return a PTable instead of a PCollection.
  */
-public abstract class TableConversion<K, V> {
+public class PTableType<K, V> extends PType<PTable<K, V>> {
+  private PType keyType;
+  private PType valueType;
+
+  public PTableType(PType keyType, PType valueType) {
+    super(Kind.COLLECTION);
+    this.keyType = keyType;
+    this.valueType = valueType;
+  }
+
+  public PType keyType() {
+    return keyType;
+  }
+
+  public PType valueType() {
+    return valueType;
+  }
 }

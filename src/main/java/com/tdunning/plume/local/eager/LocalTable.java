@@ -19,7 +19,9 @@ package com.tdunning.plume.local.eager;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.tdunning.plume.CollectionConversion;
+
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
@@ -27,7 +29,6 @@ import com.tdunning.plume.Ordering;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.TableConversion;
 import com.tdunning.plume.Tuple2;
 
 import java.util.Iterator;
@@ -37,7 +38,8 @@ import java.util.Map;
 /**
  * Completely local eager version of a PTable.
  */
-public class LocalTable<K, V> extends PTable<K, V> {
+public class LocalTable<K, V> extends LocalCollection<Pair<K, V>> implements PTable<K, V> {
+
   private List<Pair<K, V>> data = Lists.newArrayList();
 
   /**
@@ -48,7 +50,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
    *         this.
    */
   @Override
-  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, CollectionConversion<R> conversion) {
+  public <R> PCollection<R> map(DoFn<Pair<K, V>, R> fn, PCollectionType type) {
     final LocalCollection<R> r = new LocalCollection<R>();
     for (Pair<K, V> v : data) {
       fn.process(v, new EmitFn<R>() {
@@ -69,7 +71,7 @@ public class LocalTable<K, V> extends PTable<K, V> {
    * @return A parallel table containing the transformed data.
    */
   @Override
-  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, TableConversion<K1, V1> conversion) {
+  public <K1, V1> PTable<K1, V1> map(DoFn<Pair<K, V>, Pair<K1, V1>> fn, PTableType type) {
     final LocalTable<K1, V1> r = new LocalTable<K1, V1>();
     for (Pair<K, V> v : data) {
       fn.process(v, new EmitFn<Pair<K1, V1>>() {

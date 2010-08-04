@@ -19,6 +19,8 @@ package com.tdunning.plume;
 
 import java.io.IOException;
 
+import com.tdunning.plume.types.*;
+
 /**
  * A plume provides the runtime support for writing data-parallel programs.  Each Plume implementation
  * defines a mode of execution.  For instance, the local.eager.LocalPlume provides instant execution
@@ -28,32 +30,29 @@ public abstract class Plume {
   // general collection operations
   public abstract PCollection<String> readTextFile(String name) throws IOException;
   public abstract PCollection<String> readResourceFile(String name) throws IOException;
-  public abstract <T> PCollection<T> readAvroFile(String name, Class<T> targetClass);
+  public abstract <T> PCollection<T> readAvroFile(String name, PType<T> type);
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
-  // conversions that signal what kind of object we want
-  public static <K, V> TableConversion<K, V> tableOf(Class<K> keyClass, Class<V> valueClass) {
-    return null;
+  public static Utf8Type utf8() { return new Utf8Type(); }
+  public static StringType strings() { return new StringType(); }
+  public static IntegerType integers() { return new IntegerType(); }
+  public static LongType longs() { return new LongType(); }
+  public static FloatType floats() { return new FloatType(); }
+  public static DoubleType doubles() { return new DoubleType(); }
+  public static BytesType bytes() { return new BytesType(); }
+  public static BooleanType booleans() { return new BooleanType(); }
+
+  public static <K, V> PTableType<K, V> tableOf(PType<K> keyType, PType<V> valueType) {
+    return new PTableType<K, V>(keyType, valueType);
   }
 
-  public static <V> CollectionConversion<V> collectionOf(Class<V> valueClass) {
-    return null;
+  public static <V> PCollectionType<V> collectionOf(PType<V> elementType) {
+    return new PCollectionType<V>(elementType);
   }
 
-  public static <V> CollectionConversion<V> sequenceOf(Class<V> valueClass) {
-    return null;
+  public static RecordType recordsOf(Class recordClass) {
+    return new RecordType(recordClass);
   }
 
-  public static Class<String> strings() {
-    return String.class;
-  }
-
-  public static Class<Integer> integers() {
-    return Integer.class;
-  }
-
-  public static Class<Double> doubles() {
-    return Double.class;
-  }
 }

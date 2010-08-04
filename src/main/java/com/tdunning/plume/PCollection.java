@@ -17,14 +17,17 @@
 
 package com.tdunning.plume;
 
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
+
 /**
  * Parallel collection.
  */
-public abstract class PCollection<T> implements Iterable<T> {
-  public abstract <R>PCollection<R> map(DoFn<T, R> fn, CollectionConversion<R> conversion);
-  public abstract <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, TableConversion<K, V> conversion);
+public interface PCollection<T> extends Iterable<T> {
+  public <R>PCollection<R> map(DoFn<T, R> fn, PCollectionType t);
+  public <K, V>PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PTableType t);
 
   // derived operations
 
-  public abstract PTable<T, Integer> count();
+  public PTable<T, Integer> count();
 }

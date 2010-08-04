@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.tdunning.plume.Plume.*;
+
 public class FlattenTest {
   @Test
   public void flatten() {
@@ -64,7 +66,7 @@ public class FlattenTest {
       public void process(Pair<Integer, Integer> v, EmitFn<Pair<Integer, String>> emitter) {
         emitter.emit(new Pair<Integer, String>(v.getKey(), v.getValue().toString()));
       }
-    }, p.tableOf(Integer.class, String.class));
+      }, tableOf(integers(), strings()));
     for (Pair<Integer, String> pair : x5) {
       Assert.assertEquals(r.get(pair.getKey()).toString(), pair.getValue());
     }
@@ -74,7 +76,7 @@ public class FlattenTest {
       public void process(Pair<Integer, Integer> v, EmitFn<String> emitter) {
         emitter.emit(v.getValue().toString());
       }
-    }, p.collectionOf(String.class));
+      }, collectionOf(strings()));
     Map<String, Integer> r2 = Maps.newHashMap();
     for (Pair<String, Integer> v : x6.count()) {
       r2.put(v.getKey(), v.getValue());
