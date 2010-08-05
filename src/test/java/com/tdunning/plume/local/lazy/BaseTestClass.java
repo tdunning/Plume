@@ -25,8 +25,12 @@ import org.junit.Before;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
+import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
+import com.tdunning.plume.Pair;
+import com.tdunning.plume.types.IntegerType;
+import com.tdunning.plume.types.PTableType;
 
 /**
  * Contains some utility methods and variables for local.lazy testing
@@ -35,9 +39,26 @@ public class BaseTestClass {
 
   DoFn<Integer, Integer> plusOne;
   DoFn<Integer, Integer> timesTwo;
+  DoFn<Integer, Pair<Integer, Integer>> plusTwoPlusThree;
+  DoFn identity;
+  CombinerFn dummyCombiner;
+  
+  PTableType intIntTable;
   
   @Before
   public void initFns() {
+    dummyCombiner = new CombinerFn<Integer>() {
+      @Override
+      public Integer combine(Iterable<Integer> stuff) {
+        return 1;
+      }
+    };
+    identity = new DoFn() {
+      @Override
+      public void process(Object v, EmitFn emitter) {
+        emitter.emit(v);
+      }      
+    };
     plusOne = new DoFn<Integer, Integer>() {
       @Override
       public void process(Integer v, EmitFn<Integer> emitter) {
@@ -50,6 +71,14 @@ public class BaseTestClass {
         emitter.emit(v * 2);
       }
     };
+    plusTwoPlusThree = new DoFn<Integer, Pair<Integer, Integer>>() {
+      @Override
+      public void process(Integer v, EmitFn<Pair<Integer, Integer>> emitter) {
+        emitter.emit(Pair.create(v, v * 2));
+        emitter.emit(Pair.create(v, v * 3));
+      }
+    };
+    intIntTable = new PTableType(new IntegerType(), new IntegerType());
   }
   
   static void executeAndAssert(LazyCollection<Integer> output, Integer[] expectedResult) {

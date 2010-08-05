@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import com.google.common.collect.Lists;
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.PTable;
+import com.tdunning.plume.Pair;
 import com.tdunning.plume.Plume;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.types.PType;

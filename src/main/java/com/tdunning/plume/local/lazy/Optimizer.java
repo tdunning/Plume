@@ -31,15 +31,72 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 public class Optimizer {
 
-  // Work-in-progress
+  /**
+   * Work in progress
+   * 
+   * @param <T>
+   * @param output
+   * @return
+   */
   public <T> LazyCollection<T> optimize(LazyCollection<T> output) {
+    sinkFlattens(output);
     fuseParallelDos(output);
     fuseSiblingParallelDos(output);
     return output;
   }
   
   /**
-   * Here we will join ParallelDos that use the same PCollection into multiple-output {@link MultipleParallelDo}
+   * Sink flattens pushing them down to create opportunities for ParallelDo fusion
+   * 
+   * @param <T>
+   * @param arg
+   */
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public <T> void sinkFlattens(PCollection<T> arg) {
+    LazyCollection<T> output = (LazyCollection<T>)arg;
+    if(output.isMaterialized()) { // stop condition for recursive algorithm
+      return;
+    }
+    DeferredOp dOp = output.getDeferredOp();
+    if(!(dOp instanceof Flatten)) {
+      // Recursively apply this function to parent
+      sinkFlattens(((OneToOneOp)dOp).getOrigin());
+      return;
+    }
+    if(output.getDownOps() == null || output.getDownOps().size() != 1) {
+      // Recursively apply this function to parent
+      sinkFlattens(((OneToOneOp)dOp).getOrigin());
+      return;      
+    }
+    DeferredOp downOp = output.getDownOps().get(0);
+    if(!(downOp instanceof ParallelDo)) {
+      // Recursively apply this function to parent
+      sinkFlattens(((ParallelDo)dOp).getOrigin());
+      return;            
+    }
+    ParallelDo<T, ?> op = (ParallelDo<T, ?>)downOp; // PDo below current node
+    Flatten<T> flatten = (Flatten<T>)dOp; // Flatten above current node
+    List<PCollection<?>> newOrigins = new ArrayList<PCollection<?>>();
+    // Iterate over all Flatten inputs
+    for(PCollection<T> col: flatten.getOrigins()) {
+      // Recursively apply this function to this flatten's origin
+      LazyCollection<T> fInput = (LazyCollection<T>)col;
+      sinkFlattens(fInput);
+      // Sink 
+      LazyCollection<?> newInput = new LazyCollection();
+      newInput.deferredOp = new ParallelDo(op.getFunction(), fInput, newInput);
+      fInput.addDownOp(newInput.deferredOp); // unnecessary intermediate collections will remain linked but Optimizer will remove them in another step
+      newOrigins.add(newInput);
+    }
+    Flatten<?> newFlatten = new Flatten(newOrigins, op.getDest());
+    ((LazyCollection<?>)op.getDest()).deferredOp = newFlatten;
+    for(PCollection<?> newOp: newOrigins) {
+      ((LazyCollection<?>)newOp).addDownOp(newFlatten);
+    }
+  }
+  
+  /**
+   * Join ParallelDos that use the same PCollection into multiple-output {@link MultipleParallelDo}
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> void fuseSiblingParallelDos(PCollection<T> arg) {
@@ -99,7 +156,7 @@ public class Optimizer {
   }
   
   /**
-   * We want to convert : {Orig2 => p2 => Orig1 => p1 => Output} to {Orig2 => p1(p2) => Output}
+   * Fuse producer-consumer ParallelDos as in : {Orig2 => p2 => Orig1 => p1 => Output} to {Orig2 => p1(p2) => Output}
    * 
    * @param <T>
    * @param output
