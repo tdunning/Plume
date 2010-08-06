@@ -20,25 +20,20 @@ package com.tdunning.plume.local.lazy.op;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.PCollection;
 
-public class ParallelDo<T, V> extends OneToOneOp<T, V> {
+public class ParallelDo<T, V> extends MultipleParallelDo<T> {
 
   DoFn<T, V> function;
-  PCollection<T> origin;
   PCollection<V> dest;
   
   public ParallelDo(DoFn<T, V> function, PCollection<T> origin, PCollection<V> dest) {
-    super();
+    super(origin);
     this.function = function;
-    this.origin = origin;
     this.dest = dest;
+    addDest(function, dest);
   }
 
   public DoFn<T, V> getFunction() {
     return function;
-  }
-  
-  public PCollection<T> getOrigin() {
-    return origin;
   }
 
   public PCollection<V> getDest() {

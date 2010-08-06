@@ -17,21 +17,41 @@
 
 package com.tdunning.plume.local.lazy;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.Pair;
+import com.tdunning.plume.local.lazy.op.CombineValues;
+import com.tdunning.plume.local.lazy.op.Flatten;
+import com.tdunning.plume.local.lazy.op.GroupByKey;
+import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
  * The MSCR abstraction as in FlumeJava paper
  * 
- * (work in progress)
- */
+ **/
 public class MSCR {
 
+  public static class OutputChannel<K, V, T> {
+
+    Flatten<Pair<K, V>> flatten = null;
+    GroupByKey<K, V> shuffle = null;
+    CombineValues<K, V> combiner = null;
+    ParallelDo<Pair<K, V>, T> reducer = null;
+    
+    public OutputChannel(GroupByKey<K, V> shuffle) {
+      this.shuffle = shuffle;
+    }
+  }
+
   Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
-  Set<OutputChannel<?, ?, ?>> outputChannels;
-  
+  Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> outputChannels = 
+    new HashMap<GroupByKey<?, ?>, OutputChannel<?, ?, ?>>();
+  Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
+ 
   public Set<PCollection<?>> getInputs() {
     return inputs;
   }
@@ -42,5 +62,24 @@ public class MSCR {
   
   public <T> boolean hasInput(PCollection<T> input) {
     return inputs.contains(input);
+  }
+  
+  public <K, V> boolean hasOutputChannel(GroupByKey<K, V> groupByChannel) {
+    return outputChannels.containsKey(groupByChannel);
+  }
+  
+  public <T> boolean hasOutputChannel(PCollection<T> byPassChannel) {
+    return bypassChannels.contains(byPassChannel);
+  }
+  
+  public <T> void addOutputChannel(PCollection<T> byPassChannel) {
+    bypassChannels.add(byPassChannel);
+  }
+  
+  public <K, V, T> void addOutputChannel(OutputChannel<K, V, T> outputChannel) {
+    if(outputChannel.shuffle == null) {
+      throw new IllegalArgumentException("Output Channel with no Shuffle");
+    }
+    outputChannels.put(outputChannel.shuffle, outputChannel);
   }
 }

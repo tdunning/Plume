@@ -25,6 +25,8 @@ import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.Plume;
 import com.tdunning.plume.local.lazy.op.Flatten;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.types.PType;
 
 /**
@@ -55,8 +57,7 @@ public class LazyPlume extends Plume {
     return new LazyCollection<T>(source);
   }
 
-  @Override
-  public <T> PCollection<T> flatten(PCollection<T>... args) {
+  public <T> PCollection<T> flatten(PCollectionType type, PCollection<T>... args) {
     LazyCollection<T> dest = new LazyCollection<T>();
     Flatten<T> flatten = new Flatten<T>(Lists.newArrayList(args), dest);
     dest.deferredOp = flatten;
@@ -64,5 +65,20 @@ public class LazyPlume extends Plume {
       ((LazyCollection<T>)col).addDownOp(flatten);
     }
     return dest;
+  }
+
+  public <K, V> PTable<K, V> flatten(PTableType type, PCollection<Pair<K, V>>... args) {
+    LazyTable<K, V> dest = new LazyTable<K, V>();
+    Flatten<Pair<K, V>> flatten = new Flatten(Lists.newArrayList(args), dest);
+    dest.deferredOp = flatten;
+    for(PCollection<Pair<K, V>> col: args) {
+      ((LazyCollection<Pair<K, V>>)col).addDownOp(flatten);
+    }
+    return dest;
+  }
+
+  @Override
+  public <T> PCollection<T> flatten(PCollection<T>... args) {
+    return flatten(null, args);
   }
 }

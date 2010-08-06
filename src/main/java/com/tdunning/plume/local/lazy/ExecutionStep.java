@@ -17,16 +17,22 @@
 
 package com.tdunning.plume.local.lazy;
 
-import com.tdunning.plume.Pair;
-import com.tdunning.plume.local.lazy.op.CombineValues;
-import com.tdunning.plume.local.lazy.op.Flatten;
-import com.tdunning.plume.local.lazy.op.GroupByKey;
-import com.tdunning.plume.local.lazy.op.ParallelDo;
+import java.util.HashSet;
+import java.util.Set;
 
-public class OutputChannel<K, V, T> {
+/**
+ * Defines an execution plan recursively from a first ExecutionStep.
+ */
+public class ExecutionStep {
 
-  Flatten<Pair<K, V>> flatten;
-  GroupByKey<K, V> shuffle;
-  CombineValues<K, V> combiner;
-  ParallelDo<Pair<K, V>, T> reducer;
+  Set<MSCR> mscrSteps = new HashSet<MSCR>();
+  ExecutionStep nextStep;
+  
+  public Set<MSCR> getMscrSteps() {
+    return mscrSteps;
+  }
+  
+  public ExecutionStep getNextStep() {
+    return nextStep;
+  }
 }

@@ -18,31 +18,117 @@
 package com.tdunning.plume.local.lazy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
+import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.OneToOneOp;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
+/**
+ * Optimizer, first version, work in progress. What is left to do:
+ * 
+ * - Testing, testing and more testing: Maybe develop a custom tool for easily defining flows and testing them?
+ * - Lift combine values: right now not implemented (they are fused as ParallelDos)
+ * - Remove unnecessary references (not sure if it's needed) > remove parts from the tree that don't lead to an output
+ * - ... More?
+ */
 public class Optimizer {
 
   /**
-   * Work in progress
+   * Optimizes an execution tree
    * 
    * @param <T>
    * @param output
    * @return
    */
-  public <T> LazyCollection<T> optimize(LazyCollection<T> output) {
-    sinkFlattens(output);
-    fuseParallelDos(output);
-    fuseSiblingParallelDos(output);
-    return output;
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public ExecutionStep optimize(List<PCollection> inputs, List<PCollection> outputs) {
+    if(outputs == null || outputs.size() == 0) {
+      throw new IllegalArgumentException("Empty output list");
+    }
+    if(inputs == null || inputs.size() == 0) {
+      throw new IllegalArgumentException("Empty input list");
+    }
+    for(PCollection output: outputs) {
+      sinkFlattens(output);
+    }
+    for(PCollection output: outputs) {
+      fuseParallelDos(output);
+    }
+    for(PCollection output: outputs) {
+      fuseSiblingParallelDos(output);
+    }
+    // We assume there are no disjoint trees > use only one output
+    Set<MSCR> mscrs = OptimizerTools.getMSCRBlocks(outputs.get(0));
+    // Build a map of output -> MSCR step
+    Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
+    for(MSCR mscr: mscrs) {
+      for(Map.Entry<GroupByKey<?,?>, MSCR.OutputChannel<?,?,?>> entry: mscr.outputChannels.entrySet()) {
+        MSCR.OutputChannel<?,?,?> oC = entry.getValue();
+        if(oC.reducer != null) {
+          outputMap.put(oC.reducer.getDest(), mscr);
+        } else if(oC.combiner != null) {
+          outputMap.put(oC.combiner.getDest(), mscr);
+        } else {
+          outputMap.put(oC.shuffle.getDest(), mscr);
+        }
+      }
+    }
+    // Calculate dependencies between MSCRs
+    Map<MSCR, Set<MSCR>> dependencyMap = new HashMap<MSCR, Set<MSCR>>();
+    Set<MSCR> beginningMscrs = new HashSet<MSCR>();
+    for(MSCR mscr: mscrs) {
+      for(PCollection<?> input: mscr.inputs) {
+        if(inputs.contains(input)) {
+          beginningMscrs.add(mscr);
+        }
+        MSCR dependsOn = outputMap.get(input);
+        if(dependsOn == null) {
+          continue;
+        }
+        Set<MSCR> dependencies = dependencyMap.get(mscr);
+        if(dependencies == null) {
+          dependencies = new HashSet<MSCR>();
+        }
+        dependencies.add(dependsOn);
+        dependencyMap.put(mscr, dependencies);
+      }
+    }
+    ExecutionStep firstStep = new ExecutionStep();
+    for(MSCR step: beginningMscrs) {
+      if(dependencyMap.get(step) == null) {
+        firstStep.mscrSteps.add(step);
+      }
+    }
+    // Calculate execution plan
+    Set<MSCR> solvedSteps = new HashSet<MSCR>();
+    solvedSteps.addAll(firstStep.mscrSteps);
+    ExecutionStep previousStep = firstStep;
+    while(!solvedSteps.containsAll(mscrs)) {
+      ExecutionStep nextStep = new ExecutionStep();
+      for(MSCR mscr: mscrs) {
+        if(solvedSteps.contains(mscr)) {
+          continue;
+        }
+        Set<MSCR> dependencies = dependencyMap.get(mscr);
+        if(solvedSteps.containsAll(dependencies)) {
+          nextStep.mscrSteps.add(mscr);
+          solvedSteps.add(mscr);
+        }
+      }
+      previousStep.nextStep = nextStep;
+    }
+    return firstStep;
   }
   
   /**
@@ -59,9 +145,15 @@ public class Optimizer {
     }
     DeferredOp dOp = output.getDeferredOp();
     if(!(dOp instanceof Flatten)) {
-      // Recursively apply this function to parent
-      sinkFlattens(((OneToOneOp)dOp).getOrigin());
-      return;
+      if(dOp instanceof OneToOneOp) {
+        // Recursively apply this function to parent
+        sinkFlattens(((OneToOneOp)dOp).getOrigin());
+        return;
+      } else if(dOp instanceof ParallelDo) {
+        // Recursively apply this function to parent
+        sinkFlattens(((ParallelDo)dOp).getOrigin());
+        return;        
+      }
     }
     if(output.getDownOps() == null || output.getDownOps().size() != 1) {
       // Recursively apply this function to parent
@@ -70,9 +162,7 @@ public class Optimizer {
     }
     DeferredOp downOp = output.getDownOps().get(0);
     if(!(downOp instanceof ParallelDo)) {
-      // Recursively apply this function to parent
-      sinkFlattens(((ParallelDo)dOp).getOrigin());
-      return;            
+      return;    
     }
     ParallelDo<T, ?> op = (ParallelDo<T, ?>)downOp; // PDo below current node
     Flatten<T> flatten = (Flatten<T>)dOp; // Flatten above current node
@@ -117,6 +207,9 @@ public class Optimizer {
         for(PCollection<T> col: flatten.getOrigins()) {
           fuseSiblingParallelDos(col);
         }
+        return;
+      }
+      if(dOp instanceof MultipleParallelDo) {
         return;
       }
     }
@@ -191,6 +284,7 @@ public class Optimizer {
     if(!(orig1.getDeferredOp() instanceof ParallelDo)) {
       // Recursively apply this function to parent node
       fuseParallelDos(orig1);
+      return;
     }
     // At this point we know ParallelDo fusion can be done -> Perform it
     ParallelDo p2 = (ParallelDo)orig1.getDeferredOp();
