@@ -18,27 +18,23 @@
 package com.tdunning.plume.local.lazy.op;
 
 import com.tdunning.plume.CombinerFn;
-import com.tdunning.plume.PTable;
+import com.tdunning.plume.DoFn;
+import com.tdunning.plume.EmitFn;
+import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 
-public class CombineValues<K, V> extends OneToOneOp<Pair<K, Iterable<V>>, Pair<K, V>> {
-
-  PTable<K, Iterable<V>> origin;
-  PTable<K, V> dest;
+public class CombineValues<K, V> extends ParallelDo<Pair<K, Iterable<V>>, Pair<K, V>> {
   CombinerFn<V> combiner; 
-  
-  public CombineValues(CombinerFn<V> combiner, PTable<K, Iterable<V>> origin, PTable<K, V> dest) {
-    this.origin = origin;
-    this.dest = dest;
+
+  public CombineValues(final CombinerFn<V> combiner,
+      PCollection<Pair<K, Iterable<V>>> origin, PCollection<Pair<K, V>> dest) {
+    super(new DoFn<Pair<K, Iterable<V>>, Pair<K, V>>() {
+      @Override
+      public void process(Pair<K, Iterable<V>> v, EmitFn<Pair<K, V>> emitter) {
+        emitter.emit(Pair.create(v.getKey(), combiner.combine(v.getValue())));
+      }
+    } , origin, dest);
     this.combiner = combiner;
-  }
-
-  public PTable<K, Iterable<V>> getOrigin() {
-    return origin;
-  }
-
-  public PTable<K, V> getDest() {
-    return dest;
   }
 
   public CombinerFn<V> getCombiner() {

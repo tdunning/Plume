@@ -30,13 +30,14 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
+import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
  * These basic tests can be used to assert that the Optimizer behaves correctly for all basic operations 
  */
-public class BasicOptimizerTests extends BaseTestClass {
+public class BasicOptimizerTest extends BaseTestClass {
   
   @SuppressWarnings("unchecked")
   @Test
@@ -110,5 +111,38 @@ public class BasicOptimizerTests extends BaseTestClass {
     assertEquals(newPDo.getOrigin(), input);
     // Execute and assert the result after optimizing
     executeAndAssert(lOutput, new Integer[] { 4, 6, 8 });
+  }
+  
+  /**
+   * This test has two inputs, one flatten and then one ParallelDo.
+   * After sinking flattens, the tree should be as: two inputs, one ParallelDo after each input and one final Flatten.
+   */
+  @Test
+  public void testSinkFlattens() {
+    // Get Plume runtime
+    LazyPlume plume = new LazyPlume();
+    // Create simple data 
+    PCollection<Integer> input1  = plume.fromJava(Lists.newArrayList(1, 2, 3));
+    PCollection<Integer> input2  = plume.fromJava(Lists.newArrayList(4, 5, 6));
+    PCollection<Integer> output = plume.flatten(input1, input2).map(plusOne, null);
+    LazyCollection<Integer> lOutput = (LazyCollection<Integer>)output;
+    assertTrue(lOutput.getDeferredOp() instanceof ParallelDo);
+    // Execute and assert the result before optimizing
+    executeAndAssert((LazyCollection<Integer>)output, new Integer[] { 2, 3, 4, 5, 6, 7 });
+    // Get an Optimizer
+    Optimizer optimizer = new Optimizer();
+    optimizer.sinkFlattens(output);
+    // Execute and assert the result after optimizing
+    executeAndAssert((LazyCollection<Integer>)output, new Integer[] { 2, 3, 4, 5, 6, 7 });    
+    // Check that optimizer did what it's supposed to do
+    assertTrue(lOutput.getDeferredOp() instanceof Flatten);
+    Flatten flatten = (Flatten)lOutput.getDeferredOp();
+    assertEquals(flatten.getOrigins().size(), 2);
+    for(int i = 0; i < 2; i++) {
+      LazyCollection<Integer> origin = (LazyCollection<Integer>) flatten.getOrigins().get(i);
+      ParallelDo newPDo = (ParallelDo)origin.getDeferredOp();
+      assertEquals(newPDo.getFunction(), plusOne);
+      assertTrue(newPDo.getOrigin() == input1 || newPDo.getOrigin() == input2);
+    }
   }
 }

@@ -32,13 +32,11 @@ import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.types.IntegerType;
-import com.tdunning.plume.types.PTableType;
 
 /**
  * These basic tests can be used to assert that the Executor behaves correctly for all basic operations 
  */
-public class BasicExecutorTests extends BaseTestClass {
+public class BasicExecutorTest extends BaseTestClass {
 
   /**
    * This test runs a chain of two "ParallelDo" operations: (x+1), (x*2)
@@ -99,18 +97,11 @@ public class BasicExecutorTests extends BaseTestClass {
    */
   @Test
   public void testGroupByKey() {
-    DoFn<Integer, Pair<Integer, Integer>> fn = new DoFn<Integer, Pair<Integer, Integer>>() {
-      @Override
-      public void process(Integer v, EmitFn<Pair<Integer, Integer>> emitter) {
-        emitter.emit(Pair.create(v, v * 2));
-        emitter.emit(Pair.create(v, v * 3));
-      }
-    };
     // Get Plume runtime
     LazyPlume plume = new LazyPlume();
     List<Integer> l1 = Lists.newArrayList(1, 2, 3);
     PTable<Integer, Iterable<Integer>> output = plume
-      .fromJava(l1).map(fn, new PTableType(new IntegerType(), new IntegerType()))
+      .fromJava(l1).map(plusTwoPlusThree, intIntTable)
       .groupByKey();
     LazyTable<Integer, Iterable<Integer>> lOutput = (LazyTable<Integer, Iterable<Integer>>)output;
     // Get an executor
@@ -157,7 +148,7 @@ public class BasicExecutorTests extends BaseTestClass {
     LazyPlume plume = new LazyPlume();
     List<Integer> l1 = Lists.newArrayList(1, 2, 3);
     PTable<Integer, Integer> output = plume
-      .fromJava(l1).map(fn, new PTableType(new IntegerType(), new IntegerType()))
+      .fromJava(l1).map(fn, intIntTable)
       .groupByKey()
       .combine(new CombinerFn<Integer>() {
         @Override

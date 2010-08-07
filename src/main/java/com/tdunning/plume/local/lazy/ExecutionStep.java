@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package com.tdunning.plume.local.lazy.op;
+package com.tdunning.plume.local.lazy;
 
-import com.tdunning.plume.DoFn;
-import com.tdunning.plume.PCollection;
+import java.util.HashSet;
+import java.util.Set;
 
-public class ParallelDo<T, V> extends MultipleParallelDo<T> {
+/**
+ * Defines an execution plan recursively from a first ExecutionStep.
+ */
+public class ExecutionStep {
 
-  DoFn<T, V> function;
-  PCollection<V> dest;
+  Set<MSCR> mscrSteps = new HashSet<MSCR>();
+  ExecutionStep nextStep;
   
-  public ParallelDo(DoFn<T, V> function, PCollection<T> origin, PCollection<V> dest) {
-    super(origin);
-    this.function = function;
-    this.dest = dest;
-    addDest(function, dest);
+  public Set<MSCR> getMscrSteps() {
+    return mscrSteps;
   }
-
-  public DoFn<T, V> getFunction() {
-    return function;
-  }
-
-  public PCollection<V> getDest() {
-    return dest;
+  
+  public ExecutionStep getNextStep() {
+    return nextStep;
   }
 }

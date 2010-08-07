@@ -36,9 +36,6 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
  * Dummy executor that goes down-top by using recursive formulas and stores all intermediate results in-memory. 
- * 
- * @author pere
- * 
  */
 public class Executor {
 
@@ -99,17 +96,7 @@ public class Executor {
         for (Map.Entry<Object, List> entry: groupMap.entrySet()) {
           result.add((T)new Pair(entry.getKey(), entry.getValue()));
         }
-      // CombineValues
-      } else if(op instanceof CombineValues) {
-        CombineValues combine = (CombineValues) op;
-        parent = execute((LazyCollection)combine.getOrigin());
-        for (Object obj: parent) {
-          Pair p = (Pair)obj;
-          result.add((T)Pair.create(p.getKey(), 
-            combine.getCombiner().combine((Iterable)p.getValue()))
-          );
-        }
-      }
+      } 
       return result;
     }
   }
