@@ -26,7 +26,9 @@ import com.tdunning.plume.avro.*;
 
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
+import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.avro.specific.SpecificDatumWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,4 +70,14 @@ public class LocalPlume extends Plume {
     return r;
   }
 
+  @Override
+  public <T> void writeAvroFile(String name, PCollection<T> data, PType<T> type) throws IOException {
+    Schema schema = AvroTypes.getSchema(type);
+    DataFileWriter<T> factory = new DataFileWriter<T>(new SpecificDatumWriter<T>(schema));
+    DataFileWriter<T> out = factory.create(schema, new File(name));
+    for (T t : data) {
+      out.append(t);
+    }
+    out.close();
+  }
 }

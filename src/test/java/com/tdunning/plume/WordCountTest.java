@@ -5,6 +5,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.tdunning.plume.local.eager.LocalPlume;
+import com.tdunning.plume.local.lazy.LazyPlume;
 import org.junit.Test;
 
 import org.apache.avro.util.Utf8;
@@ -20,6 +21,19 @@ public class WordCountTest {
   public void wordCount() throws IOException {
     Plume p = new LocalPlume();
     countWords(p.readResourceFile("simple-text.txt"));
+  }
+
+  @Test
+  public void lazyWordCount() throws IOException {
+    Plume p = new LazyPlume();
+    countWords(p.readResourceFile("simple-text.txt"));
+  }
+
+  @Test
+  public void lazyAvroWordCount() throws IOException {
+    Plume p = new LazyPlume();
+    String file = Resources.getResource("simple-text.avro").getPath();
+    countWords(p.readAvroFile(file, strings()));
   }
 
   @Test

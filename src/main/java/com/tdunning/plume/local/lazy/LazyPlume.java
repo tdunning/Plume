@@ -19,9 +19,13 @@ package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Plume;
+import com.tdunning.plume.avro.AvroFile;
+import com.tdunning.plume.local.eager.LocalCollection;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.types.PType;
 
@@ -38,14 +42,12 @@ public class LazyPlume extends Plume {
 
   @Override
   public PCollection<String> readResourceFile(String name) throws IOException {
-    // TODO Auto-generated method stub
-    return null;
+    return LocalCollection.wrap(Resources.readLines(Resources.getResource(name), Charsets.UTF_8));
   }
 
   @Override
   public <T> PCollection<T> readAvroFile(String name, PType<T> type) {
-    // TODO Auto-generated method stub
-    return null;
+    return new AvroFile<T>(name, type);
   }
   
   @Override
@@ -62,5 +64,10 @@ public class LazyPlume extends Plume {
       ((LazyCollection<T>)col).addDownOp(flatten);
     }
     return dest;
+  }
+
+  @Override
+  public <T> void writeAvroFile(String name, PCollection<T> data, PType<T> type) {
+    throw new RuntimeException("Not done");
   }
 }

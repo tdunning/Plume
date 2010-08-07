@@ -34,6 +34,8 @@ public abstract class Plume {
   public abstract <T> PCollection<T> fromJava(Iterable<T> source);
   public abstract <T> PCollection<T> flatten(PCollection<T>... args);
 
+  public abstract <T> void writeAvroFile(String name, PCollection<T> data, PType<T> type) throws IOException;
+
   public static StringType strings() { return new StringType(); }
   public static IntegerType integers() { return new IntegerType(); }
   public static LongType longs() { return new LongType(); }
