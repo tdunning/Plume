@@ -46,7 +46,7 @@ public class LazyCollection<T> implements PCollection<T> {
   /**
    * Build a PCollection with materialized state
    * 
-   * @param data
+   * @param data  Concrete data from which to build the PCollection.
    */
   public LazyCollection(Iterable<T> data) {
     this.data = Lists.newArrayList(data);
@@ -80,7 +80,7 @@ public class LazyCollection<T> implements PCollection<T> {
   }
 
   /**
-   * Creates a new LazyCollection from a {@link ParallelDoCC} deferred operation
+   * Creates a new LazyCollection from a deferred operation
    * which maps a PCollection to another PCollection
    */
   @Override
@@ -93,7 +93,7 @@ public class LazyCollection<T> implements PCollection<T> {
   }
 
   /**
-   * Creates a new LazyTable from a {@link ParallelDoCT} deferred operation
+   * Creates a new LazyTable from a deferred operation
    * which maps a PCollection to a PTable
    */
   public <K, V> PTable<K, V> map(DoFn<T, Pair<K, V>> fn, PTableType type) {

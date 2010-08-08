@@ -47,9 +47,10 @@ public class Optimizer {
   /**
    * Optimizes an execution tree
    * 
-   * @param <T>
-   * @param output
-   * @return
+   * @param inputs   A list of the inputs.
+   * @param outputs  A list of the outputs.
+   * @return  An optimized dataflow that consists of MSCR operations decorated with functional
+   * compositions.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public ExecutionStep optimize(List<PCollection> inputs, List<PCollection> outputs) {
@@ -133,9 +134,7 @@ public class Optimizer {
   
   /**
    * Sink flattens pushing them down to create opportunities for ParallelDo fusion
-   * 
-   * @param <T>
-   * @param arg
+   * @param arg  The collection that may contain flatten operations that we need to sink.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> void sinkFlattens(PCollection<T> arg) {
@@ -187,6 +186,7 @@ public class Optimizer {
   
   /**
    * Join ParallelDos that use the same PCollection into multiple-output {@link MultipleParallelDo}
+   * @param arg  The original collection that may contain sibling do chains
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> void fuseSiblingParallelDos(PCollection<T> arg) {
@@ -250,9 +250,7 @@ public class Optimizer {
   
   /**
    * Fuse producer-consumer ParallelDos as in : {Orig2 => p2 => Orig1 => p1 => Output} to {Orig2 => p1(p2) => Output}
-   * 
-   * @param <T>
-   * @param output
+   * @param arg  The collection that may have compositions internally.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> void fuseParallelDos(PCollection<T> arg) {

@@ -91,7 +91,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
   public <X> PTable<K, X> combine(CombinerFn<X> fn) {
     LazyTable<K, X> dest = new LazyTable<K, X>();
     // TODO check how to do this better instead of unchecked casting
-    CombineValues<K, X> combine = new CombineValues<K, X>(fn, (LazyTable<K, Iterable<X>>)this, dest);
+    CombineValues<K, X> combine = new CombineValues<K, X>(fn, (LazyTable<K, Iterable<X>>) this, dest);
     dest.deferredOp = combine;
     addDownOp(combine);
     return dest;

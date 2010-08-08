@@ -30,8 +30,17 @@ import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * The MSCR abstraction as in FlumeJava paper
- * 
+ * The MSCR abstraction as in FlumeJava paper.  MSCR stands for map-shuffle-combine-reduce,
+ * but it is more general than the normal map-reduce operation such as in Hadoop because
+ * multiple inputs can exist each with a separate change of map functions.  Likewise,
+ * there are grouping keys and multiple outputs, one for each grouping key.
+ *
+ * An MSCR can be converted to a conventional map-reduce by tagging inputs and creating
+ * tagged union data structures.  The purpose of the MSCR abstraction is that it provides
+ * a very convenient target for optimizations since it is higher-level than a primitive
+ * map-reduce (that makes the optimizer easier to write) but at the same time there are no
+ * significant optimization opportunities lost by not looking below the level of the MSCR
+ * operations. 
  **/
 public class MSCR {
 

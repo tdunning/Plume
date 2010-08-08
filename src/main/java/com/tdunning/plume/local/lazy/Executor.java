@@ -27,7 +27,6 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.local.lazy.op.CombineValues;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
@@ -81,7 +80,7 @@ public class Executor {
       // GroupByKey
       } else if(op instanceof GroupByKey) {
         GroupByKey gBK = (GroupByKey) op;
-        parent = execute((LazyCollection)gBK.getOrigin());
+        parent = execute(gBK.getOrigin());
         Map<Object, List> groupMap = Maps.newHashMap();
         // Perform in-memory group by operation
         for (Object obj : parent) {

@@ -72,7 +72,7 @@ public class LazyPlume extends Plume {
 
   public <K, V> PTable<K, V> flatten(PTableType type, PCollection<Pair<K, V>>... args) {
     LazyTable<K, V> dest = new LazyTable<K, V>();
-    Flatten<Pair<K, V>> flatten = new Flatten(Lists.newArrayList(args), dest);
+    Flatten<Pair<K, V>> flatten = new Flatten<Pair<K, V>>(Lists.newArrayList(args), dest);
     dest.deferredOp = flatten;
     for(PCollection<Pair<K, V>> col: args) {
       ((LazyCollection<Pair<K, V>>)col).addDownOp(flatten);
