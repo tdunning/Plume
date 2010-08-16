@@ -74,6 +74,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
 
   /**
    * Creates a new PTable from a {@link GroupByKey} deferred operation
+   * TODO this looks wrong since it doesn't pay attention to the order
    */
   @Override
   public PTable<K, Iterable<V>> groupByKey(Ordering<V> order) {

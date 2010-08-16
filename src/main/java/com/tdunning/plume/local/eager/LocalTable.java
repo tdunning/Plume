@@ -123,8 +123,7 @@ public class LocalTable<K, V> extends LocalCollection<Pair<K, V>> implements PTa
    */
   @Override
   public PTable<K, Iterable<V>> groupByKey(Ordering<V> order) {
-    // TODO look into a better argument type here
-    return null;
+    throw new UnsupportedOperationException("Not implemented yet ... help by making this work");
   }
 
   /**

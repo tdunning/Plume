@@ -1,0 +1,5 @@
+2010-01-01  ted message 1
+2010-02-10  rahul   how do messages get time-sorted
+2010-02-11  ted Use an Ordering in the group-by
+2010-02-12  rahul   but that isn't implemented yet
+2010-02-13  ted View that as an opportunity to shine!
