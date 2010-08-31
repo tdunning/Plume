@@ -59,6 +59,9 @@ public class LazyPlume extends Plume {
     return new LazyCollection<T>(source);
   }
 
+  public <K, V> PTable<K, V> fromJava(Iterable<Pair<K, V>> source, PTableType type) {
+    return new LazyTable<K, V>(source);
+  }
 
   public <T> PCollection<T> flatten(PCollectionType type, PCollection<T>... args) {
     LazyCollection<T> dest = new LazyCollection<T>();

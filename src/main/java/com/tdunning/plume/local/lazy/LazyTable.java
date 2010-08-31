@@ -35,6 +35,10 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
   public LazyTable() {
   }
 
+  public LazyTable(Iterable<Pair<K, V>> data) {
+    super(data);
+  }
+  
   /**
    * Creates a new LazyCollection from a {@link ParallelDo} deferred operation
    * which maps a PTable to a PCollection
