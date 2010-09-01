@@ -29,18 +29,32 @@ import com.tdunning.plume.PCollection;
 public abstract class PlumeWorkflow {
   
   List<PCollection> inputs;
+  List<PCollection> outputs;
   
-  public List<PCollection> getInputs() {
-    return inputs;
-  }
-  
-  public abstract List<PCollection> process();
+  public abstract void build();
 
   public PlumeWorkflow() {
+    init();
+  }
+  
+  protected void init() {
     inputs = new ArrayList<PCollection>();
+    outputs = new ArrayList<PCollection>();
+  }
+  
+  protected void addOutput(PCollection collection) {
+    outputs.add(collection);
   }
   
   protected void addInput(PCollection collection) {
     inputs.add(collection);
+  }
+
+  public List<PCollection> getInputs() {
+    return inputs;
+  }
+  
+  public List<PCollection> getOutputs() {
+    return outputs;
   }
 }

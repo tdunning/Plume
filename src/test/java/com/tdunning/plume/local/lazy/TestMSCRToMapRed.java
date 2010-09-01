@@ -52,18 +52,21 @@ public class TestMSCRToMapRed {
   public static class WordCountWorkflow extends PlumeWorkflow {
     
     public WordCountWorkflow() {
-      super();
-      try {
-        LazyPlume plume = new LazyPlume();
-        PCollection input = plume.readFile("/tmp/input-wordcount.txt");
-        addInput(input);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
     
     @Override
-    public List<PCollection> process() {
+    public void build() {
+      init();
+      
+      LazyPlume plume = new LazyPlume();
+      PCollection input;
+      try {
+        input = plume.readFile("/tmp/input-wordcount.txt");
+        addInput(input);
+      } catch (IOException e) {
+        throw new RuntimeException();
+      }
+      
       DoFn wordCountMap = new DoFn<Text, Pair<Text, IntWritable>>() {
         @Override
         public void process(Text v,
@@ -87,13 +90,11 @@ public class TestMSCRToMapRed {
         }
       };
 
-      PCollection output = inputs.get(0).map(wordCountMap, new PTableType(new StringType(), new IntegerType()))
+      PCollection output = input.map(wordCountMap, new PTableType(new StringType(), new IntegerType()))
         .groupByKey()
         .map(wordCountReduce, new PTableType(new StringType(), new IntegerType()));
       
-      List<PCollection> outputs = new ArrayList<PCollection>();
-      outputs.add(output);
-      return outputs;
+      addOutput(output);
     }
   }
   

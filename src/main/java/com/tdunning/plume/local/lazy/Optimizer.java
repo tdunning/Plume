@@ -45,8 +45,9 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 public class Optimizer {
 
   public ExecutionStep optimize(PlumeWorkflow workFlow) {
+    workFlow.build();
     List<PCollection> inputs = workFlow.getInputs();
-    List<PCollection> outputs = workFlow.process();
+    List<PCollection> outputs = workFlow.getOutputs();
     return optimize(inputs, outputs);
   }
   

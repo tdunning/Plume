@@ -56,10 +56,8 @@ public class MSCRReducer implements Reducer<PlumeObject, PlumeObject, NullWritab
     try {
       // TODO commenting, logging
       PlumeWorkflow workFlow = (PlumeWorkflow) Class.forName(className).newInstance();
-      List<PCollection> inputs  = workFlow.getInputs();
-      List<PCollection> outputs = workFlow.process();
       Optimizer optimizer = new Optimizer();
-      ExecutionStep step = optimizer.optimize(inputs, outputs);
+      ExecutionStep step = optimizer.optimize(workFlow);
       // TODO By now, only one-MSCR flows
       this.mscr = step.getMscrSteps().iterator().next();
     } catch (InstantiationException e) {
