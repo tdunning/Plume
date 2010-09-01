@@ -44,6 +44,16 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
  **/
 public class MSCR {
 
+  private Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
+  private Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> outputChannels = 
+    new HashMap<GroupByKey<?, ?>, OutputChannel<?, ?, ?>>();
+  private Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
+
+  private Map<GroupByKey<?, ?>, Integer> numberedChannels = new HashMap<GroupByKey<?, ?>, Integer>();
+  private Map<Integer, GroupByKey<?, ?>> channelByNumber  = new HashMap<Integer, GroupByKey<?, ?>>();
+ 
+  private int nChannels = 0;
+  
   public static class OutputChannel<K, V, T> {
 
     Flatten<Pair<K, V>> flatten = null;
@@ -55,12 +65,15 @@ public class MSCR {
       this.shuffle = shuffle;
     }
   }
+  
+  public Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> getOutputChannels() {
+    return outputChannels;
+  }
 
-  Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
-  Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> outputChannels = 
-    new HashMap<GroupByKey<?, ?>, OutputChannel<?, ?, ?>>();
-  Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
- 
+  public Set<PCollection<?>> getBypassChannels() {
+    return bypassChannels;
+  }
+
   public Set<PCollection<?>> getInputs() {
     return inputs;
   }
@@ -89,6 +102,25 @@ public class MSCR {
     if(outputChannel.shuffle == null) {
       throw new IllegalArgumentException("Output Channel with no Shuffle");
     }
+    nChannels++;
     outputChannels.put(outputChannel.shuffle, outputChannel);
+    getNumberedChannels().put(outputChannel.shuffle, nChannels);
+    getChannelByNumber().put(nChannels, outputChannel.shuffle);
+  }
+
+  void setNumberedChannels(Map<GroupByKey<?, ?>, Integer> numberedChannels) {
+    this.numberedChannels = numberedChannels;
+  }
+
+  Map<GroupByKey<?, ?>, Integer> getNumberedChannels() {
+    return numberedChannels;
+  }
+
+  void setChannelByNumber(Map<Integer, GroupByKey<?, ?>> channelByNumber) {
+    this.channelByNumber = channelByNumber;
+  }
+
+  Map<Integer, GroupByKey<?, ?>> getChannelByNumber() {
+    return channelByNumber;
   }
 }

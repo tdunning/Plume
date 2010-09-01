@@ -39,8 +39,10 @@ public class LazyCollection<T> implements PCollection<T> {
 
   boolean materialized = false;
   private List<T> data;
+  private String file; // points to a file in local filesystem, if collection is materialized like that TODO to be better defined
 
   DeferredOp deferredOp;
+  
   List<DeferredOp> downOps;
 
   /**
@@ -126,5 +128,13 @@ public class LazyCollection<T> implements PCollection<T> {
   @Override
   public PTable<T, Integer> count() {
     throw new UnsupportedOperationException("Net yet implemented");
+  }
+  
+  public String getFile() {
+    return file;
+  }
+
+  public void setFile(String file) {
+    this.file = file;
   }
 }

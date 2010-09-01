@@ -19,6 +19,9 @@ package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
 
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -27,7 +30,6 @@ import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.Plume;
 import com.tdunning.plume.avro.AvroFile;
-import com.tdunning.plume.local.eager.LocalCollection;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
@@ -38,15 +40,32 @@ import com.tdunning.plume.types.PType;
  */
 public class LazyPlume extends Plume {
 
+  /**
+   * Just points to a file, doesn't read it
+   * 
+   * @param <T>
+   * @param name
+   * @return
+   * @throws IOException
+   */
+  public <T> PCollection<T> readFile(String name) throws IOException {
+    LazyCollection<T> coll = new LazyCollection<T>();
+    coll.materialized = true;
+    coll.setFile(name);
+    return coll;
+  }
+  
   @Override
   public PCollection<String> readTextFile(String name) throws IOException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
+    return readFile(name);
+  }  
+  
+  /**
+   * I guess the convention is that resource files are small enough to be read in memory
+   */
   @Override
   public PCollection<String> readResourceFile(String name) throws IOException {
-    return LocalCollection.wrap(Resources.readLines(Resources.getResource(name), Charsets.UTF_8));
+    return fromJava(Resources.readLines(Resources.getResource(name), Charsets.UTF_8));
   }
 
   @Override

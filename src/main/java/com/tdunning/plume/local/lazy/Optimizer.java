@@ -44,6 +44,12 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
  */
 public class Optimizer {
 
+  public ExecutionStep optimize(PlumeWorkflow workFlow) {
+    List<PCollection> inputs = workFlow.getInputs();
+    List<PCollection> outputs = workFlow.process();
+    return optimize(inputs, outputs);
+  }
+  
   /**
    * Optimizes an execution tree
    * 
@@ -74,7 +80,7 @@ public class Optimizer {
     // Build a map of output -> MSCR step
     Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
     for(MSCR mscr: mscrs) {
-      for(Map.Entry<GroupByKey<?,?>, MSCR.OutputChannel<?,?,?>> entry: mscr.outputChannels.entrySet()) {
+      for(Map.Entry<GroupByKey<?,?>, MSCR.OutputChannel<?,?,?>> entry: mscr.getOutputChannels().entrySet()) {
         MSCR.OutputChannel<?,?,?> oC = entry.getValue();
         if(oC.reducer != null) {
           outputMap.put(oC.reducer.getDest(), mscr);
@@ -89,7 +95,7 @@ public class Optimizer {
     Map<MSCR, Set<MSCR>> dependencyMap = new HashMap<MSCR, Set<MSCR>>();
     Set<MSCR> beginningMscrs = new HashSet<MSCR>();
     for(MSCR mscr: mscrs) {
-      for(PCollection<?> input: mscr.inputs) {
+      for(PCollection<?> input: mscr.getInputs()) {
         if(inputs.contains(input)) {
           beginningMscrs.add(mscr);
         }

@@ -85,9 +85,9 @@ public class TestOptimizerTools extends BaseTestClass {
       MSCR mscr = iterator.next();
       if(mscr.hasInput(input1)) {
         assertTrue(mscr.hasInput(input2));
-        assertEquals(mscr.inputs.size(), 2);
+        assertEquals(mscr.getInputs().size(), 2);
       } else if(mscr.hasInput(input3)) { 
-        assertEquals(mscr.inputs.size(), 1);
+        assertEquals(mscr.getInputs().size(), 1);
       } 
     }
   }

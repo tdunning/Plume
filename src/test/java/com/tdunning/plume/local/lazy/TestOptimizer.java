@@ -146,7 +146,7 @@ public class TestOptimizer extends BaseTestClass {
     assertTrue(step.getMscrSteps().size() == 1);
 
     MSCR toExecute = step.getMscrSteps().iterator().next();
-    assertEquals(toExecute.inputs.size(), 2);
-    assertEquals(toExecute.outputChannels.size(), 1);
+    assertEquals(toExecute.getInputs().size(), 2);
+    assertEquals(toExecute.getOutputChannels().size(), 1);
   }
 }
