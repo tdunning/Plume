@@ -76,8 +76,8 @@ public class Optimizer {
     for(PCollection output: outputs) {
       fuseSiblingParallelDos(output);
     }
-    // We assume there are no disjoint trees > use only one output
-    Set<MSCR> mscrs = OptimizerTools.getMSCRBlocks(outputs.get(0));
+    // We assume there are no disjoint trees
+    Set<MSCR> mscrs = OptimizerTools.getMSCRBlocks(outputs);
     // Build a map of output -> MSCR step
     Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
     for(MSCR mscr: mscrs) {
@@ -181,6 +181,7 @@ public class Optimizer {
       // Sink 
       LazyCollection<?> newInput = new LazyCollection();
       newInput.deferredOp = new ParallelDo(op.getFunction(), fInput, newInput);
+      newInput.type = ((LazyCollection)flatten.getDest()).getType();
       fInput.addDownOp(newInput.deferredOp); // unnecessary intermediate collections will remain linked but Optimizer will remove them in another step
       newOrigins.add(newInput);
     }

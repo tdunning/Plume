@@ -24,17 +24,30 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.KeyValueTextInputFormat;
+import org.apache.hadoop.mapred.OutputFormat;
+import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.mapred.lib.MultipleInputs;
 import org.apache.hadoop.mapred.lib.MultipleOutputs;
 
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.PTable;
+import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
+import com.tdunning.plume.types.*;
 
 /**
  * This class converts a MSCR into an executable MapRed job. - Work-in-progress
@@ -103,7 +116,7 @@ public class MSCRToMapRed {
     }
   }
   
-  @SuppressWarnings({ "deprecation", "rawtypes", "unchecked" })
+  @SuppressWarnings({ "deprecation", "unchecked" })
   public static JobConf getMapRed(final MSCR mscr, PlumeWorkflow workflow, String id, String outputPath) {
     Configuration conf = new Configuration();
 
@@ -129,14 +142,39 @@ public class MSCRToMapRed {
       if(!(l.isMaterialized() && l.getFile() != null)) {
         throw new IllegalArgumentException("Can't create MapRed from MSCR inputs that are not materialized to a file");
       }
-      MultipleInputs.addInputPath(job, new Path(l.getFile()), TextInputFormat.class, MSCRMapper.class);
+      PCollectionType rType = l.getType();
+      if(rType instanceof PTableType) {
+        // TODO think how to support other than text format here
+        MultipleInputs.addInputPath(job, new Path(l.getFile()), KeyValueTextInputFormat.class, MSCRMapper.class);        
+      } else {
+        MultipleInputs.addInputPath(job, new Path(l.getFile()), TextInputFormat.class, MSCRMapper.class);
+      }
     }
     /**
      * Define multiple outputs
      */
     FileOutputFormat.setOutputPath(job, new Path(outputPath));
     for(Map.Entry<GroupByKey<?, ?>, Integer> entry: mscr.getNumberedChannels().entrySet()) {
-      MultipleOutputs.addNamedOutput(job, entry.getValue()+"", TextOutputFormat.class, Text.class, Text.class);
+      OutputChannel<?, ?, ?> oC = mscr.getOutputChannels().get(entry.getKey());
+      PCollectionType rType = entry.getKey().getDest().getType();
+      if(oC.reducer != null) {
+        rType = ((LazyCollection)oC.reducer.getDest()).getType();
+      }
+      if(rType instanceof PTableType) {
+        PTableType tType = (PTableType)rType;
+        Class<? extends OutputFormat> outputFormat = SequenceFileOutputFormat.class;
+        if(tType.keyType() instanceof StringType && tType.valueType() instanceof StringType) {
+          outputFormat = TextOutputFormat.class;
+        }
+        MultipleOutputs.addNamedOutput(job, entry.getValue()+"", outputFormat, 
+            getHadoopType(tType.keyType()), getHadoopType(tType.valueType()));
+      } else {
+        Class<? extends OutputFormat> outputFormat = SequenceFileOutputFormat.class;
+        if(rType.elementType() instanceof StringType) {
+          outputFormat = TextOutputFormat.class;
+        }
+        MultipleOutputs.addNamedOutput(job, entry.getValue()+"", outputFormat, NullWritable.class, getHadoopType(rType.elementType()));
+      }
     }
     /**
      * Define Reducer
@@ -144,4 +182,34 @@ public class MSCRToMapRed {
     job.setReducerClass(MSCRReducer.class);
     return job;
   }
+  
+  /**
+   * 
+   * @param type
+   * @return
+   */
+  public static Class getHadoopType(PType type) {
+    if(type instanceof BooleanType) {
+      return BooleanWritable.class;
+    }
+    if(type instanceof DoubleType) {
+      return DoubleWritable.class;
+    }
+    if(type instanceof FloatType) {
+      return FloatWritable.class;
+    }
+    if(type instanceof IntegerType) {
+      return IntWritable.class;
+    }
+    if(type instanceof LongType) {
+      return LongWritable.class;
+    }
+    if(type instanceof StringType) {
+      return Text.class;
+    }
+    if(type instanceof BytesType) {
+      return BytesWritable.class;
+    }
+    throw new IllegalArgumentException("Unknown or unsupported PType type " + type);
+  } 
 }

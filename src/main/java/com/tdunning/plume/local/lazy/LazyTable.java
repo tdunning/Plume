@@ -29,14 +29,15 @@ import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
+import com.tdunning.plume.types.PType;
 
 public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTable<K, V> {
 
   public LazyTable() {
   }
 
-  public LazyTable(Iterable<Pair<K, V>> data) {
-    super(data);
+  public LazyTable(Iterable<Pair<K, V>> data, PTableType type) {
+    super(data, type);
   }
   
   /**
@@ -48,6 +49,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
     LazyCollection<R> dest = new LazyCollection<R>();
     ParallelDo<Pair<K, V>, R> op = new ParallelDo<Pair<K, V>, R>(fn, this, dest);
     dest.deferredOp = op;
+    dest.type = type;
     addDownOp(op);
     return dest;
   }
@@ -61,6 +63,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
     LazyTable<K1, V1> dest = new LazyTable<K1, V1>();
     ParallelDo<Pair<K, V>, Pair<K1, V1>> op = new ParallelDo<Pair<K, V>, Pair<K1, V1>>(fn, this, dest);
     dest.deferredOp = op;
+    dest.type = type;
     addDownOp(op);
     return dest;
   }
@@ -72,6 +75,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
   public PTable<K, Iterable<V>> groupByKey() {
     LazyTable<K, Iterable<V>> dest = new LazyTable<K, Iterable<V>>();
     dest.deferredOp = new GroupByKey<K, V>(this, dest);
+    dest.type = type; // Not sure if this is essentially correct
     addDownOp(dest.deferredOp);
     return dest;
   }
@@ -85,6 +89,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
     LazyTable<K, Iterable<V>> dest = new LazyTable<K, Iterable<V>>();
     GroupByKey<K, V> groupByKey = new GroupByKey<K, V>(this, dest);
     dest.deferredOp = groupByKey;
+    dest.type = type; // Not sure if this is essentially correct
     addDownOp(groupByKey);
     return dest;
   }
@@ -98,6 +103,7 @@ public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTabl
     // TODO check how to do this better instead of unchecked casting
     CombineValues<K, X> combine = new CombineValues<K, X>(fn, (LazyTable<K, Iterable<X>>) this, dest);
     dest.deferredOp = combine;
+    dest.type = type;
     addDownOp(combine);
     return dest;
   }

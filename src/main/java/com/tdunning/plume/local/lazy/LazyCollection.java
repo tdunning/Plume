@@ -37,6 +37,8 @@ import com.tdunning.plume.types.PTableType;
  */
 public class LazyCollection<T> implements PCollection<T> {
 
+  PCollectionType type;
+  
   boolean materialized = false;
   private List<T> data;
   private String file; // points to a file in local filesystem, if collection is materialized like that TODO to be better defined
@@ -50,8 +52,9 @@ public class LazyCollection<T> implements PCollection<T> {
    * 
    * @param data  Concrete data from which to build the PCollection.
    */
-  public LazyCollection(Iterable<T> data) {
+  public LazyCollection(Iterable<T> data, PCollectionType type) {
     this.data = Lists.newArrayList(data);
+    this.type = type;
     materialized = true;
   }
   
@@ -90,6 +93,7 @@ public class LazyCollection<T> implements PCollection<T> {
     LazyCollection<R> dest = new LazyCollection<R>();
     ParallelDo<T, R> op = new ParallelDo<T, R>(fn, this, dest);
     dest.deferredOp = op;
+    dest.type = type;
     addDownOp(op);
     return dest;
   }
@@ -102,10 +106,15 @@ public class LazyCollection<T> implements PCollection<T> {
     LazyTable<K, V> dest = new LazyTable<K, V>();
     ParallelDo<T, Pair<K, V>> op = new ParallelDo<T, Pair<K, V>>(fn, this, dest);
     dest.deferredOp = op;
+    dest.type = type;
     addDownOp(op);
     return dest;
   }
   
+  public PCollectionType getType() {
+    return type;
+  }
+
   public DeferredOp getDeferredOp() {
     return deferredOp;
   }

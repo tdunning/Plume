@@ -42,27 +42,11 @@ import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
  * Mapper that is used to execute MSCR in MapReds - Work-in-progress.
  * 
  */
-public class MSCRMapper implements Mapper<Object, Text, PlumeObject, PlumeObject>  {
-
-  MSCR mscr;
+public class MSCRMapper extends MSCRMapRedBase implements Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>  {
   
   @Override
   public void configure(JobConf arg0) {
-    String className = arg0.get(MSCRToMapRed.WORKFLOW_NAME);
-    try {
-      // TODO commenting, logging
-      PlumeWorkflow workFlow = (PlumeWorkflow) Class.forName(className).newInstance();
-      Optimizer optimizer = new Optimizer();
-      ExecutionStep step = optimizer.optimize(workFlow);
-      // TODO By now, only one-MSCR flows
-      this.mscr = step.getMscrSteps().iterator().next();
-    } catch (InstantiationException e) {
-      throw new RuntimeException(e);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    readMSCR(arg0);
   }
   
   @Override
@@ -71,7 +55,7 @@ public class MSCRMapper implements Mapper<Object, Text, PlumeObject, PlumeObject
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
   @Override
-  public void map(Object arg0, Text arg1,
+  public void map(WritableComparable arg0, WritableComparable arg1,
       final OutputCollector<PlumeObject, PlumeObject> arg2, Reporter arg3)
       throws IOException {
 
@@ -82,6 +66,8 @@ public class MSCRMapper implements Mapper<Object, Text, PlumeObject, PlumeObject
     for(PCollection<?> input: mscr.getInputs()) {
       l = (LazyCollection<?>)input;
     }
+    
+    System.out.println( mscr.getNumberedChannels() );
     
     DeferredOp op = l.getDownOps().get(0); // WARN assuming only one op can follow mscr input collections (after optimizing)
     if(op instanceof MultipleParallelDo) {

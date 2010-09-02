@@ -74,7 +74,6 @@ public class TestOptimizer extends BaseTestClass {
   }
   
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  @Test
   public void testFigure5() {
     // Get Plume runtime
     LazyPlume plume = new LazyPlume();
@@ -106,7 +105,6 @@ public class TestOptimizer extends BaseTestClass {
     assertNull(step.nextStep.nextStep);
   }
   
-  @Test
   public void testEasyChain() {
     LazyPlume plume = new LazyPlume();
     /*

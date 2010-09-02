@@ -20,7 +20,9 @@ package com.tdunning.plume.local.lazy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
@@ -55,7 +57,7 @@ public class TestOptimizerTools extends BaseTestClass {
         emitter.emit(1);
       }
     }, null);
-    Set<GroupByKey<?, ?>> groupBys = OptimizerTools.getAllGroupByKeys(output);
+    List<GroupByKey<?, ?>> groupBys = OptimizerTools.getAllGroupByKeys(output);
     assertEquals(groupBys.size(), 2);
   }
   
@@ -78,7 +80,9 @@ public class TestOptimizerTools extends BaseTestClass {
         .map(identity, intIntTable)
         .groupByKey();
     
-    Set<MSCR> mscrBlocks = OptimizerTools.getMSCRBlocks(output);
+    List<PCollection> outputs = new ArrayList<PCollection>();
+    outputs.add(output);
+    Set<MSCR> mscrBlocks = OptimizerTools.getMSCRBlocks(outputs);
     assertEquals(mscrBlocks.size(), 2);
     Iterator<MSCR> iterator = mscrBlocks.iterator();
     for(int i = 0; i < 2; i++) {

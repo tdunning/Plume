@@ -32,7 +32,6 @@ import org.apache.hadoop.mapred.lib.MultipleOutputs;
 import com.google.common.collect.Lists;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
-import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.MSCRToMapRed.PlumeObject;
@@ -42,31 +41,14 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 /**
  * Reducer that is used to execute MSCR in MapReds - Work-in-progress
  */
-public class MSCRReducer implements Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable> {
+public class MSCRReducer extends MSCRMapRedBase implements Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable> {
 
   MultipleOutputs mos;
-  MSCR mscr;
   
   @Override
   public void configure(JobConf arg0) {
     mos = new MultipleOutputs(arg0);
-
-    // Following is the same as in Mapper - TODO Refactor to avoid code duplication
-    String className = arg0.get(MSCRToMapRed.WORKFLOW_NAME);
-    try {
-      // TODO commenting, logging
-      PlumeWorkflow workFlow = (PlumeWorkflow) Class.forName(className).newInstance();
-      Optimizer optimizer = new Optimizer();
-      ExecutionStep step = optimizer.optimize(workFlow);
-      // TODO By now, only one-MSCR flows
-      this.mscr = step.getMscrSteps().iterator().next();
-    } catch (InstantiationException e) {
-      throw new RuntimeException(e);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    readMSCR(arg0);
   }
   
   @Override
@@ -93,9 +75,13 @@ public class MSCRReducer implements Reducer<PlumeObject, PlumeObject, NullWritab
       reducer.process(Pair.create(arg0.obj, vals), new EmitFn() {
       @Override
         public void emit(Object v) {
-          Pair p = (Pair)v; // TODO how to check / report this. 
           try {
-            mos.getCollector(arg0.sourceId+"", arg3).collect(p.getKey(), p.getValue());
+            if(v instanceof Pair) {
+              Pair p = (Pair)v; 
+              mos.getCollector(arg0.sourceId+"", arg3).collect(p.getKey(), p.getValue());
+            } else {
+              mos.getCollector(arg0.sourceId+"", arg3).collect(NullWritable.get(), (WritableComparable)v);
+            }
           } catch (IOException e) {
             e.printStackTrace(); // TODO How to report this
           }

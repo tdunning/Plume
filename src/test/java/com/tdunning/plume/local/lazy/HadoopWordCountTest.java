@@ -17,9 +17,9 @@
 
 package com.tdunning.plume.local.lazy;
 
+import static com.tdunning.plume.Plume.*;
+
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -37,13 +37,14 @@ import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.types.IntegerType;
+import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.types.StringType;
 
 /**
  * Test the conversion of MSCR to MapRed by running a simple MSCR in local hadoop
  */
-public class TestMSCRToMapRed {
+public class HadoopWordCountTest {
 
   /**
    * The WordCount Workflow
@@ -61,7 +62,7 @@ public class TestMSCRToMapRed {
       LazyPlume plume = new LazyPlume();
       PCollection input;
       try {
-        input = plume.readFile("/tmp/input-wordcount.txt");
+        input = plume.readFile("/tmp/input-wordcount.txt", new PCollectionType(new StringType()));
         addInput(input);
       } catch (IOException e) {
         throw new RuntimeException();
@@ -90,9 +91,9 @@ public class TestMSCRToMapRed {
         }
       };
 
-      PCollection output = input.map(wordCountMap, new PTableType(new StringType(), new IntegerType()))
+      PCollection output = input.map(wordCountMap, tableOf(strings(), integers()))
         .groupByKey()
-        .map(wordCountReduce, new PTableType(new StringType(), new IntegerType()));
+        .map(wordCountReduce, tableOf(strings(), strings()));
       
       addOutput(output);
     }
@@ -106,14 +107,14 @@ public class TestMSCRToMapRed {
   @SuppressWarnings({ "unchecked", "deprecation" })
   @Test
   public void testWordCount() throws IOException {
-
     String inputPath = "/tmp/input-wordcount.txt";
+    String outputPath = "/tmp/output-mscrtomapred-wordcount";
     
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
     // Prepare output for test
-    system.delete(new Path("/tmp/output-mscrtomapred"), true);
+    system.delete(new Path(outputPath), true);
     
     // Prepare workflow
     WordCountWorkflow workFlow = new WordCountWorkflow();
@@ -124,7 +125,7 @@ public class TestMSCRToMapRed {
     MSCR mscr = step.getMscrSteps().iterator().next();
 
     // Run Job
-    JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", "/tmp/output-mscrtomapred");
+    JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", outputPath);
     JobClient.runJob(job);
   }
 }

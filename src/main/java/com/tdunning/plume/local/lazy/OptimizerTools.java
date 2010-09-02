@@ -17,6 +17,7 @@
 
 package com.tdunning.plume.local.lazy;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +44,16 @@ public class OptimizerTools {
    * @return
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  public static <T> Set<MSCR> getMSCRBlocks(PCollection<T> output) {
-    Set<GroupByKey<?, ?>> groupBys = OptimizerTools.getAllGroupByKeys(output);
+  public static Set<MSCR> getMSCRBlocks(List<PCollection> outputs) {
+    List<GroupByKey<?, ?>> groupBys = new ArrayList<GroupByKey<?, ?>>();
+    for(PCollection<?> output: outputs) {
+      List<GroupByKey<?, ?>> partialGroupBys = OptimizerTools.getAllGroupByKeys(output);
+      for(GroupByKey<?, ?> gBK: partialGroupBys) {
+        if(!groupBys.contains(gBK)) {
+          groupBys.add(gBK);
+        }
+      }
+    }
     Set<MSCR> mscrs = new HashSet<MSCR>();
     // For all found GroupByKey blocks
     for(GroupByKey<?, ?> groupBy: groupBys) {
@@ -144,8 +153,8 @@ public class OptimizerTools {
    * @param output
    * @return
    */
-  public static Set<GroupByKey<?, ?>> getAllGroupByKeys(PCollection<?> output) {
-    Set<GroupByKey<?, ?>> groupByKeys = new HashSet<GroupByKey<?, ?>>();
+  public static List<GroupByKey<?, ?>> getAllGroupByKeys(PCollection<?> output) {
+    List<GroupByKey<?, ?>> groupByKeys = new ArrayList<GroupByKey<?, ?>>();
     Stack<LazyCollection<?>> toVisit = new Stack<LazyCollection<?>>();
     Set<LazyCollection<?>> visited = new HashSet<LazyCollection<?>>();
     toVisit.push((LazyCollection<?>)output);
@@ -161,13 +170,13 @@ public class OptimizerTools {
       DeferredOp op = current.getDeferredOp();
       if(op instanceof GroupByKey) {
         // Found GroupByKey
-        groupByKeys.add((GroupByKey<?, ?>)op);
+        GroupByKey<?, ?> gBK = (GroupByKey<?, ?>)op;
+        if(!groupByKeys.contains(gBK)) {
+          groupByKeys.add(gBK);
+        }
       } 
       // Add more nodes to visit
       List<DeferredOp> ops = Lists.newArrayList();
-      if(current.getDownOps() != null) {
-        current.getDownOps();
-      }
       ops.add(op);
       for(DeferredOp o: ops) {
         if(o instanceof Flatten) {
@@ -191,12 +200,6 @@ public class OptimizerTools {
           LazyCollection<?> input = (LazyCollection<?>)mPDo.getOrigin();
           if(!visited.contains(input)) {
             toVisit.push(input);
-          }
-          for(Map.Entry<?, ?> entry: mPDo.getDests().entrySet()) {
-            LazyCollection<?> in = (LazyCollection<?>)entry.getKey();
-            if(!visited.contains(in)) {
-              toVisit.push(in);
-            }
           }
         }
       }
