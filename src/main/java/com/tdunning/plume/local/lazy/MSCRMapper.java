@@ -18,10 +18,8 @@
 package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Mapper;
@@ -37,15 +35,19 @@ import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
 
 /**
  * Mapper that is used to execute MSCR in MapReds - Work-in-progress.
- * 
  */
 public class MSCRMapper extends MSCRMapRedBase implements Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>  {
   
+  JobConf conf;
+  
   @Override
   public void configure(JobConf arg0) {
+    this.conf = arg0;
     readMSCR(arg0);
   }
   
@@ -58,16 +60,17 @@ public class MSCRMapper extends MSCRMapRedBase implements Mapper<WritableCompara
   public void map(WritableComparable arg0, WritableComparable arg1,
       final OutputCollector<PlumeObject, PlumeObject> arg2, Reporter arg3)
       throws IOException {
-
-    /**
-     * TODO Get LazyCollection for this input
-     */
-    LazyCollection<?> l = null;
-    for(PCollection<?> input: mscr.getInputs()) {
-      l = (LazyCollection<?>)input;
-    }
     
-    System.out.println( mscr.getNumberedChannels() );
+    LazyCollection<?> l = null;
+    
+    // Get LazyCollection for this input - will only work with one input 
+    /*
+     * TODO Right now, I don't see the way of doing it by checking InputSplit, because TaggedInputSplit is not visible.
+     */
+    for(PCollection<?> input: mscr.getInputs()) {
+      LazyCollection<?> thisL = (LazyCollection<?>)input;
+      l = thisL; // 
+    }
     
     DeferredOp op = l.getDownOps().get(0); // WARN assuming only one op can follow mscr input collections (after optimizing)
     if(op instanceof MultipleParallelDo) {
@@ -86,7 +89,14 @@ public class MSCRMapper extends MSCRMapRedBase implements Mapper<WritableCompara
         } else {
           throw new RuntimeException("Invalid MSCR");
         }
-        en.getValue().process(arg1, new EmitFn() {
+        // If this collection is a table -> process Pair, otherwise process value
+        PCollectionType type = l.getType();
+        Object toProcess = arg1;
+        if(type instanceof PTableType) {
+          toProcess = Pair.create(arg0, arg1);
+        }
+        // Call parallelDo function
+        en.getValue().process(toProcess, new EmitFn() {
           @Override
           public void emit(Object v) {
             Pair p = (Pair)v; // TODO how to report this. Same with WritableComparable type safety.

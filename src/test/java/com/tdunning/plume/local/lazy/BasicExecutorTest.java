@@ -105,7 +105,7 @@ public class BasicExecutorTest extends BaseTestClass {
       .groupByKey();
     LazyTable<Integer, Iterable<Integer>> lOutput = (LazyTable<Integer, Iterable<Integer>>)output;
     // Get an executor
-    Executor executor = new Executor();
+    LocalExecutor executor = new LocalExecutor();
     Iterable<Pair<Integer, Iterable<Integer>>> executedOutput = executor.execute(lOutput);
     List<Pair<Integer, Iterable<Integer>>> outputList = Lists.newArrayList(executedOutput);
     Collections.sort(outputList, new Comparator<Pair<Integer, ?>>() {
@@ -161,7 +161,7 @@ public class BasicExecutorTest extends BaseTestClass {
         }
       });
     // Get an executor
-    Executor executor = new Executor();
+    LocalExecutor executor = new LocalExecutor();
     LazyTable<Integer, Integer> lOutput = (LazyTable<Integer, Integer>)output;
     Iterable<Pair<Integer, Integer>> executedOutput = executor.execute(lOutput);
     List<Pair<Integer, Integer>> outputList = Lists.newArrayList(executedOutput);

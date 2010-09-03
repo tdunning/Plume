@@ -27,6 +27,7 @@ import java.util.Set;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.local.lazy.op.CombineValues;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
@@ -35,12 +36,7 @@ import com.tdunning.plume.local.lazy.op.OneToOneOp;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * Optimizer, first version, work in progress. What is left to do:
- * 
- * - Testing, testing and more testing: Maybe develop a custom tool for easily defining flows and testing them?
- * - Lift combine values: right now not implemented (they are fused as ParallelDos)
- * - Remove unnecessary references (not sure if it's needed) > remove parts from the tree that don't lead to an output
- * - ... More?
+ * First version of Optimizer. It needs more testing.
  */
 public class Optimizer {
 
@@ -75,6 +71,10 @@ public class Optimizer {
     }
     for(PCollection output: outputs) {
       fuseSiblingParallelDos(output);
+    }
+    // Clean optimized tree
+    for(PCollection input: inputs) {
+      removeUnnecessaryOps(input, outputs);
     }
     // We assume there are no disjoint trees
     Set<MSCR> mscrs = OptimizerTools.getMSCRBlocks(outputs);
@@ -137,6 +137,43 @@ public class Optimizer {
       previousStep.nextStep = nextStep;
     }
     return firstStep;
+  }
+  
+  /**
+   * Removes unnecesary operations that are not removed by the Optimizer. It goes top-down (receives an Input).
+   * Returns true if passed node doesn't lead to an output.
+   * 
+   * @param <T>
+   * @param arg
+   */
+  public boolean removeUnnecessaryOps(PCollection arg, List<PCollection> outputs) {
+    LazyCollection<?> input = (LazyCollection)arg;
+    if(input.getDownOps() == null || input.getDownOps().size() == 0) { // Leaf node
+      return !outputs.contains(input);
+    }
+    List<DeferredOp> finalDOps = new ArrayList<DeferredOp>(); // create new list of deferredops that are 'usefull'
+    for(DeferredOp op: input.getDownOps()) {
+      boolean remove = false;
+      if(op instanceof OneToOneOp) {
+        remove = removeUnnecessaryOps(((OneToOneOp<?, ?>)op).getDest(), outputs);
+      } else if(op instanceof ParallelDo) {
+        remove = removeUnnecessaryOps(((ParallelDo<?, ?>)op).getDest(), outputs);
+      } else if(op instanceof Flatten) {
+        remove = removeUnnecessaryOps(((Flatten<?>)op).getDest(), outputs);        
+      } else if(op instanceof MultipleParallelDo) {
+        MultipleParallelDo<?> mPDo = (MultipleParallelDo<?>)op;
+        remove = true; // begin with 1 because we will apply an AND gate with the childs
+        for(Object entry: mPDo.getDests().entrySet()) {
+          PCollection<?> pCol = (PCollection<?>)((Map.Entry)entry).getKey();
+          remove = remove & removeUnnecessaryOps(pCol, outputs);
+        }
+      }
+      if(!remove) {
+        finalDOps.add(op);
+      }
+    }
+    input.downOps = finalDOps;
+    return finalDOps.size() == 0; // if true this node can also be removed
   }
   
   /**
@@ -294,6 +331,15 @@ public class Optimizer {
     }
     // At this point we know ParallelDo fusion can be done -> Perform it
     ParallelDo p2 = (ParallelDo)orig1.getDeferredOp();
+    // Lift combine values
+    if(p2 instanceof CombineValues) { 
+      LazyCollection lCol = (LazyCollection)p2.getOrigin();
+      if(!lCol.isMaterialized() && lCol.getDeferredOp() instanceof GroupByKey) {
+        // Upper parallel do is CombineValues and follows a GroupByKey -> don't join
+        fuseParallelDos(orig1);
+        return;
+      }
+    }
     final DoFn f1 = p1.getFunction();
     final DoFn f2 = p2.getFunction();
     // Define the joined function

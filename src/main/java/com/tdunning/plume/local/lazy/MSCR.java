@@ -44,6 +44,12 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
  **/
 public class MSCR {
 
+  private int id; // this id identifies the MSCR in the execution tree
+  
+  public int getId() {
+    return id;
+  }
+
   private Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
   private Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> outputChannels = 
     new HashMap<GroupByKey<?, ?>, OutputChannel<?, ?, ?>>();
@@ -53,6 +59,10 @@ public class MSCR {
   private Map<Integer, GroupByKey<?, ?>> channelByNumber  = new HashMap<Integer, GroupByKey<?, ?>>();
  
   private int nChannels = 0;
+  
+  public MSCR(int id) {
+    this.id = id;
+  }
   
   public static class OutputChannel<K, V, T> {
 

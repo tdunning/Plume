@@ -124,7 +124,7 @@ public class TestOptimizer extends BaseTestClass {
       }
     }, intIntTable);
     
-    Executor executor = new Executor();
+    LocalExecutor executor = new LocalExecutor();
     Iterable<Pair<Integer,Integer>> result = executor.execute((LazyTable<Integer, Integer>)o);
     Iterator<Pair<Integer,Integer>> it = result.iterator();
     Pair<Integer,Integer> next = it.next();

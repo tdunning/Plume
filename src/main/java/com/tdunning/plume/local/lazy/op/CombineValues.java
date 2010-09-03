@@ -24,6 +24,7 @@ import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 
 public class CombineValues<K, V> extends ParallelDo<Pair<K, Iterable<V>>, Pair<K, V>> {
+  
   CombinerFn<V> combiner; 
 
   public CombineValues(final CombinerFn<V> combiner,

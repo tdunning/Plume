@@ -83,7 +83,7 @@ public class BaseTestClass {
   
   static void executeAndAssert(LazyCollection<Integer> output, Integer[] expectedResult) {
     // Get an executor
-    Executor executor = new Executor();
+    LocalExecutor executor = new LocalExecutor();
     // Execute current plan
     Iterable<Integer> result = executor.execute(output);
     List<Integer> l = Lists.newArrayList(result);

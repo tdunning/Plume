@@ -34,9 +34,11 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.KeyValueTextInputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
+import org.apache.hadoop.mapred.SequenceFileInputFormat;
 import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
@@ -44,17 +46,21 @@ import org.apache.hadoop.mapred.lib.MultipleInputs;
 import org.apache.hadoop.mapred.lib.MultipleOutputs;
 
 import com.tdunning.plume.PCollection;
-import com.tdunning.plume.PTable;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
-import com.tdunning.plume.types.*;
+import com.tdunning.plume.types.BooleanType;
+import com.tdunning.plume.types.BytesType;
+import com.tdunning.plume.types.DoubleType;
+import com.tdunning.plume.types.FloatType;
+import com.tdunning.plume.types.IntegerType;
+import com.tdunning.plume.types.LongType;
+import com.tdunning.plume.types.PCollectionType;
+import com.tdunning.plume.types.PTableType;
+import com.tdunning.plume.types.PType;
+import com.tdunning.plume.types.StringType;
 
 /**
  * This class converts a MSCR into an executable MapRed job. - Work-in-progress
- * 
- * Current stage limitations: All inputs to MapRed have to be text input format, all outputs have to be text tables.
- *  + Combiner is not taken into account.
- * 
  */
 public class MSCRToMapRed {
 
@@ -117,11 +123,11 @@ public class MSCRToMapRed {
   }
   
   @SuppressWarnings({ "deprecation", "unchecked" })
-  public static JobConf getMapRed(final MSCR mscr, PlumeWorkflow workflow, String id, String outputPath) {
+  public static JobConf getMapRed(final MSCR mscr, PlumeWorkflow workflow, String jobId, String outputPath) {
     Configuration conf = new Configuration();
 
     JobConf job = new JobConf(conf, MSCRToMapRed.class);
-    job.setJobName("MSCR " + id);
+    job.setJobName("MSCR " + jobId);
 
     job.setMapOutputKeyClass(PlumeObject.class);
     job.setMapOutputValueClass(PlumeObject.class);
@@ -129,7 +135,7 @@ public class MSCRToMapRed {
     job.setJarByClass(MSCRToMapRed.class);
 
     job.set(WORKFLOW_NAME, workflow.getClass().getName());
-    job.set(MSCR_ID, id);
+    job.set(MSCR_ID, mscr.getId()+"");
     
     /**
      * Inputs
@@ -143,11 +149,18 @@ public class MSCRToMapRed {
         throw new IllegalArgumentException("Can't create MapRed from MSCR inputs that are not materialized to a file");
       }
       PCollectionType rType = l.getType();
+      Class<? extends InputFormat> format =  SequenceFileInputFormat.class;
       if(rType instanceof PTableType) {
-        // TODO think how to support other than text format here
-        MultipleInputs.addInputPath(job, new Path(l.getFile()), KeyValueTextInputFormat.class, MSCRMapper.class);        
+        PTableType tType = (PTableType)rType;
+        if(tType.valueType() instanceof StringType && tType.keyType() instanceof StringType) {
+          format = KeyValueTextInputFormat.class;
+        }
+        MultipleInputs.addInputPath(job, new Path(l.getFile()), format, MSCRMapper.class);        
       } else {
-        MultipleInputs.addInputPath(job, new Path(l.getFile()), TextInputFormat.class, MSCRMapper.class);
+        if(rType.elementType() instanceof StringType) {
+          format = TextInputFormat.class;
+        }
+        MultipleInputs.addInputPath(job, new Path(l.getFile()), format, MSCRMapper.class);
       }
     }
     /**
@@ -177,8 +190,9 @@ public class MSCRToMapRed {
       }
     }
     /**
-     * Define Reducer
+     * Define Reducer & Combiner
      */
+    job.setCombinerClass(MSCRCombiner.class);
     job.setReducerClass(MSCRReducer.class);
     return job;
   }

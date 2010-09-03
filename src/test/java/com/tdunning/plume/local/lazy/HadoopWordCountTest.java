@@ -18,8 +18,12 @@
 package com.tdunning.plume.local.lazy;
 
 import static com.tdunning.plume.Plume.*;
+import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +35,11 @@ import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
@@ -78,21 +86,27 @@ public class HadoopWordCountTest {
           }
         }
       };
+      final CombinerFn wordCountCombiner = new CombinerFn<IntWritable>() {
+        @Override
+        public IntWritable combine(Iterable<IntWritable> stuff) {
+          int c = 0;
+          for(IntWritable i : stuff) {
+            c += i.get();
+          }
+          return new IntWritable(c);
+        }
+      };
       DoFn wordCountReduce = new DoFn<Pair<Text, Iterable<IntWritable>>, Pair<Text, Text>>() {
         @Override
         public void process(Pair<Text, Iterable<IntWritable>> v,
             EmitFn<Pair<Text, Text>> emitter) {
-          int c = 0;
-          Iterable<IntWritable> values = v.getValue();
-          for(IntWritable i : values) {
-            c += i.get();
-          }
-          emitter.emit(Pair.create(v.getKey(), new Text(c+"")));
+          emitter.emit(Pair.create(v.getKey(), new Text(""+wordCountCombiner.combine(v.getValue()))));
         }
       };
 
       PCollection output = input.map(wordCountMap, tableOf(strings(), integers()))
         .groupByKey()
+        .combine(wordCountCombiner)
         .map(wordCountReduce, tableOf(strings(), strings()));
       
       addOutput(output);
@@ -127,5 +141,17 @@ public class HadoopWordCountTest {
     // Run Job
     JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", outputPath);
     JobClient.runJob(job);
+    
+    List<String> str = Files.readLines(new File(outputPath+"/1-r-00000"), Charsets.UTF_8);
+    
+    Map<String, String> m = Maps.newHashMap();
+    for (String line: str) {
+      m.put(line.split("\t")[0], line.split("\t")[1]); // not super-optimal, but less code
+    }
+    assertEquals(3+"", m.get("is"));
+    assertEquals(3+"", m.get("some"));
+    assertEquals(3+"", m.get("simple"));
+    assertEquals(1+"", m.get("examples"));
+    assertEquals(2+"", m.get("text"));
   }
 }

@@ -36,7 +36,7 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 /**
  * Dummy executor that goes down-top by using recursive formulas and stores all intermediate results in-memory. 
  */
-public class Executor {
+public class LocalExecutor {
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> Iterable<T> execute(LazyCollection<T> output) {

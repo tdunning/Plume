@@ -20,7 +20,6 @@ package com.tdunning.plume.local.lazy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -54,6 +53,7 @@ public class OptimizerTools {
         }
       }
     }
+    int mscrId = 1;
     Set<MSCR> mscrs = new HashSet<MSCR>();
     // For all found GroupByKey blocks
     for(GroupByKey<?, ?> groupBy: groupBys) {
@@ -111,7 +111,8 @@ public class OptimizerTools {
         }
       }
       if(mscrToAdd == null) { // otherwise create new MSCR
-        mscrToAdd = new MSCR();
+        mscrToAdd = new MSCR(mscrId);
+        mscrId++;
       }
       // Add all missing input channels to current MSCR
       for(PCollection<?> input: inputs) {

@@ -1,7 +1,9 @@
 package com.tdunning.plume.local.lazy;
 
 import static com.tdunning.plume.Plume.*;
+import static org.junit.Assert.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.StringTokenizer;
@@ -44,7 +46,7 @@ public class HadoopComplexTest {
       
       final IntWritable one = new IntWritable(1);
       
-      DoFn<Pair<WritableComparable, Iterable<IntWritable>>, Pair<WritableComparable, IntWritable>> countReduce = 
+      DoFn countReduce = 
         new DoFn<Pair<WritableComparable, Iterable<IntWritable>>, Pair<WritableComparable, IntWritable>>() {
         @Override
         public void process(Pair<WritableComparable, Iterable<IntWritable>> v,
@@ -133,5 +135,12 @@ public class HadoopComplexTest {
     // Run Job
     JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "Complex", outputPath);
     JobClient.runJob(job);      
+    
+    // Just assert that 3 output files were written and have content
+    for(int i = 1; i <= 3; i++) {
+      File f = new File(outputPath+"/"+i+"-r-00000");
+      assertTrue(f.exists());
+      assertTrue(f.length() > 100);
+    }
   }
 }
