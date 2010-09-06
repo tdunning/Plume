@@ -17,7 +17,9 @@
 
 package com.tdunning.plume.local.lazy;
 
-import static com.tdunning.plume.Plume.*;
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.strings;
+import static com.tdunning.plume.Plume.tableOf;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -31,8 +33,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -44,9 +45,7 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.types.IntegerType;
 import com.tdunning.plume.types.PCollectionType;
-import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.types.StringType;
 
 /**
@@ -117,10 +116,11 @@ public class HadoopWordCountTest {
    * The wordcount example to test with local hadoop
    * 
    * @throws IOException 
+   * @throws ClassNotFoundException 
+   * @throws InterruptedException 
    */
-  @SuppressWarnings({ "unchecked", "deprecation" })
   @Test
-  public void testWordCount() throws IOException {
+  public void testWordCount() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
     String outputPath = "/tmp/output-mscrtomapred-wordcount";
     
@@ -139,8 +139,9 @@ public class HadoopWordCountTest {
     MSCR mscr = step.getMscrSteps().iterator().next();
 
     // Run Job
-    JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", outputPath);
-    JobClient.runJob(job);
+    Job job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", outputPath);
+    job.setJarByClass(HadoopWordCountTest.class);
+    job.waitForCompletion(true);
     
     List<String> str = Files.readLines(new File(outputPath+"/1-r-00000"), Charsets.UTF_8);
     

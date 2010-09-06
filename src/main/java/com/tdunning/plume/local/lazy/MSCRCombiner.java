@@ -18,14 +18,10 @@
 package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapreduce.Reducer;
 
 import com.google.common.collect.Lists;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
@@ -35,37 +31,35 @@ import com.tdunning.plume.local.lazy.op.GroupByKey;
 /**
  * Combiner that is used to executed MSCR in Map/reds - Work in progress
  */
-public class MSCRCombiner extends MSCRMapRedBase implements Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject> {
+public class MSCRCombiner extends Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject> {
 
-  @Override
-  public void configure(JobConf arg0) {
-    readMSCR(arg0);
+  MSCR mscr;
+  
+  protected void setup(Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject>.Context context)
+    throws IOException, InterruptedException {
+
+    this.mscr = MSCRMapRedBase.readMSCR(context.getConfiguration());
   }
-
-  @Override
-  public void close() throws IOException {
-
-  }
-
-  @Override
-  public void reduce(PlumeObject arg0, Iterator<PlumeObject> arg1,
-      OutputCollector<PlumeObject, PlumeObject> arg2, Reporter arg3)
-      throws IOException {
-
+  
+  @SuppressWarnings("unchecked")
+  protected void reduce(final PlumeObject arg0, java.lang.Iterable<PlumeObject> values,
+      Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject>.Context context)
+    throws IOException, InterruptedException {
+    
     GroupByKey gBK = mscr.getChannelByNumber().get(arg0.sourceId);
     OutputChannel oC = mscr.getOutputChannels().get(gBK);
     if(oC.combiner != null) {
       // Apply combiner function for this channel
       List<WritableComparable> vals = Lists.newArrayList();
-      while(arg1.hasNext()) {
-        vals.add(arg1.next().obj);
+      for(PlumeObject val: values) {
+        vals.add(val.obj);
       }
       WritableComparable result = (WritableComparable) oC.combiner.getCombiner().combine(vals);
-      arg2.collect(arg0, new PlumeObject(result, arg0.sourceId));
+      context.write(arg0, new PlumeObject(result, arg0.sourceId));
     } else {
       // direct writing - write all key, value pairs
-      while(arg1.hasNext()) {
-        arg2.collect(arg0, arg1.next());
+      for(PlumeObject val: values) {
+        context.write(arg0, val);
       }
     }
   }

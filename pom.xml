@@ -10,12 +10,26 @@
 
   <repositories>
     <repository>
-      <id>ApacheSnapshot</id>
+      <id>Cloudera</id>
+      <url>https://repository.cloudera.com/content/repositories/releases/</url>
+    </repository>
+    <repository>
+      <id>Apache Snapshots</id>
       <url>http://repository.apache.org/snapshots/</url>
     </repository>
     <repository>
       <id>JBoss</id>
       <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+    </repository>
+    <repository>
+      <id>Apache Snapshots-group</id>
+      <url>https://repository.apache.org/content/repositories/snapshots-group/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
   </repositories>
 
@@ -36,9 +50,24 @@
       <version>1.4.0-SNAPSHOT</version>
     </dependency>
     <dependency>
-    	<groupId>org.apache.hadoop</groupId>
-    	<artifactId>hadoop-core</artifactId>
-    	<version>0.20.2</version>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>0.21.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapred</artifactId>
+      <version>0.21.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs</artifactId>
+      <version>0.21.0-SNAPSHOT</version>
+    </dependency>    
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.6.1</version>
     </dependency>
   </dependencies>
 

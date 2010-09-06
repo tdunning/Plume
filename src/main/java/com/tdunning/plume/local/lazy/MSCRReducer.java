@@ -18,16 +18,12 @@
 package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.lib.MultipleOutputs;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import com.google.common.collect.Lists;
 import com.tdunning.plume.DoFn;
@@ -41,27 +37,29 @@ import com.tdunning.plume.local.lazy.op.ParallelDo;
 /**
  * Reducer that is used to execute MSCR in MapReds - Work-in-progress
  */
-public class MSCRReducer extends MSCRMapRedBase implements Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable> {
+public class MSCRReducer extends Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable> {
 
   MultipleOutputs mos;
+  MSCR mscr;
   
-  @Override
-  public void configure(JobConf arg0) {
-    mos = new MultipleOutputs(arg0);
-    readMSCR(arg0);
+  protected void setup(Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable>.Context context)
+    throws IOException, InterruptedException {
+
+    this.mos  = new MultipleOutputs(context);
+    this.mscr = MSCRMapRedBase.readMSCR(context.getConfiguration());
   }
   
-  @Override
-  public void close() throws IOException {
+  protected void cleanup(Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable>.Context context) 
+    throws IOException ,InterruptedException {
+    
     mos.close();
   }
   
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  @Override
-  public void reduce(final PlumeObject arg0, Iterator<PlumeObject> values,
-      OutputCollector<NullWritable, NullWritable> arg2, final Reporter arg3)
-  throws IOException {
-
+  @SuppressWarnings("unchecked")
+  protected void reduce(final PlumeObject arg0, java.lang.Iterable<PlumeObject> values,
+      Reducer<PlumeObject,PlumeObject,NullWritable,NullWritable>.Context arg2)
+    throws IOException, InterruptedException {
+    
     GroupByKey gBK = mscr.getChannelByNumber().get(arg0.sourceId);
     OutputChannel oC = mscr.getOutputChannels().get(gBK);
     if(oC.reducer != null) {
@@ -69,8 +67,8 @@ public class MSCRReducer extends MSCRMapRedBase implements Reducer<PlumeObject, 
       ParallelDo pDo = oC.reducer;
       DoFn reducer = pDo.getFunction(); // TODO how to check / report this
       List<WritableComparable> vals = Lists.newArrayList();
-      while(values.hasNext()) {
-        vals.add(values.next().obj);
+      for(PlumeObject val: values) {
+        vals.add(val.obj);
       }
       reducer.process(Pair.create(arg0.obj, vals), new EmitFn() {
       @Override
@@ -78,19 +76,19 @@ public class MSCRReducer extends MSCRMapRedBase implements Reducer<PlumeObject, 
           try {
             if(v instanceof Pair) {
               Pair p = (Pair)v; 
-              mos.getCollector(arg0.sourceId+"", arg3).collect(p.getKey(), p.getValue());
+              mos.write(arg0.sourceId+"", p.getKey(), p.getValue());
             } else {
-              mos.getCollector(arg0.sourceId+"", arg3).collect(NullWritable.get(), (WritableComparable)v);
+              mos.write(arg0.sourceId+"", NullWritable.get(), (WritableComparable)v);
             }
-          } catch (IOException e) {
+          } catch (Exception e) {
             e.printStackTrace(); // TODO How to report this
           }
         }
       });
     } else {
       // direct writing - write all key, value pairs
-      while(values.hasNext()) {
-        mos.getCollector(arg0.sourceId+"", arg3).collect(arg0.obj, values.next().obj);
+      for(PlumeObject val: values) {
+        mos.write(arg0.sourceId+"", arg0.obj, val.obj);
       }
     }
   }

@@ -1,7 +1,10 @@
 package com.tdunning.plume.local.lazy;
 
-import static com.tdunning.plume.Plume.*;
-import static org.junit.Assert.*;
+import static com.tdunning.plume.Plume.collectionOf;
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.strings;
+import static com.tdunning.plume.Plume.tableOf;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,8 +17,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -23,8 +25,6 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.types.PCollectionType;
-import com.tdunning.plume.types.StringType;
 
 public class HadoopComplexTest {
 
@@ -114,7 +114,7 @@ public class HadoopComplexTest {
   }
   
   @Test
-  public void test() throws IOException {
+  public void test() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
     String outputPath = "/tmp/output-mscrtomapred-complex";
     
@@ -133,8 +133,9 @@ public class HadoopComplexTest {
     MSCR mscr = step.getMscrSteps().iterator().next();
 
     // Run Job
-    JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "Complex", outputPath);
-    JobClient.runJob(job);      
+    Job job = MSCRToMapRed.getMapRed(mscr, workFlow, "Complex", outputPath);
+    job.setJarByClass(HadoopComplexTest.class);
+    job.waitForCompletion(true);   
     
     // Just assert that 3 output files were written and have content
     for(int i = 1; i <= 3; i++) {

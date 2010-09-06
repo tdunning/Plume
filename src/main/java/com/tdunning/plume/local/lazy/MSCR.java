@@ -74,6 +74,22 @@ public class MSCR {
     public OutputChannel(GroupByKey<K, V> shuffle) {
       this.shuffle = shuffle;
     }
+
+    public Flatten<Pair<K, V>> getFlatten() {
+      return flatten;
+    }
+
+    public GroupByKey<K, V> getShuffle() {
+      return shuffle;
+    }
+
+    public CombineValues<K, V> getCombiner() {
+      return combiner;
+    }
+
+    public ParallelDo<Pair<K, V>, T> getReducer() {
+      return reducer;
+    }
   }
   
   public Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> getOutputChannels() {
@@ -122,7 +138,7 @@ public class MSCR {
     this.numberedChannels = numberedChannels;
   }
 
-  Map<GroupByKey<?, ?>, Integer> getNumberedChannels() {
+  public Map<GroupByKey<?, ?>, Integer> getNumberedChannels() {
     return numberedChannels;
   }
 
@@ -130,7 +146,7 @@ public class MSCR {
     this.channelByNumber = channelByNumber;
   }
 
-  Map<Integer, GroupByKey<?, ?>> getChannelByNumber() {
+  public Map<Integer, GroupByKey<?, ?>> getChannelByNumber() {
     return channelByNumber;
   }
 }

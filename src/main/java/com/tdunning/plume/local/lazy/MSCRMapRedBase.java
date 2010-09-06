@@ -17,13 +17,11 @@
 
 package com.tdunning.plume.local.lazy;
 
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.conf.Configuration;
 
 public class MSCRMapRedBase {
 
-  protected MSCR mscr;
-  
-  protected void readMSCR(JobConf conf) {
+  public static MSCR readMSCR(Configuration conf) {
     String className = conf.get(MSCRToMapRed.WORKFLOW_NAME);
     try {
       // TODO commenting, logging
@@ -31,7 +29,7 @@ public class MSCRMapRedBase {
       Optimizer optimizer = new Optimizer();
       ExecutionStep step = optimizer.optimize(workFlow);
       // TODO By now, only one-MSCR flows
-      this.mscr = step.getMscrSteps().iterator().next();
+      return step.getMscrSteps().iterator().next();
     } catch (InstantiationException e) {
       throw new RuntimeException(e);
     } catch (IllegalAccessException e) {

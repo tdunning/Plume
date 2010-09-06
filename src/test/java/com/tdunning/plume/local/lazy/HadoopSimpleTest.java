@@ -1,6 +1,7 @@
 package com.tdunning.plume.local.lazy;
 
-import static com.tdunning.plume.Plume.*;
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.tableOf;
 
 import java.io.IOException;
 
@@ -8,16 +9,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.Job;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.io.Resources;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.local.lazy.HadoopWordCountTest.WordCountWorkflow;
 
 public class HadoopSimpleTest {
 
@@ -49,9 +48,11 @@ public class HadoopSimpleTest {
       addOutput(output);
     }
   }
-  
+
+  // TODO create input
   @Test
-  public void test() throws IOException {
+  @Ignore
+  public void test() throws Exception {
     String outputPath = "/tmp/output-simpletest";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
@@ -64,7 +65,8 @@ public class HadoopSimpleTest {
     ExecutionStep step = optimizer.optimize(workFlow);
     MSCR mscr = step.getMscrSteps().iterator().next();
     // Run Job
-    JobConf job = MSCRToMapRed.getMapRed(mscr, workFlow, "Simple", outputPath);
-    JobClient.runJob(job);
+    Job job = MSCRToMapRed.getMapRed(mscr, workFlow, "Simple", outputPath);
+    job.setJarByClass(HadoopSimpleTest.class);
+    job.waitForCompletion(true);
   }
 }

@@ -33,17 +33,18 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.InputFormat;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.KeyValueTextInputFormat;
-import org.apache.hadoop.mapred.OutputFormat;
-import org.apache.hadoop.mapred.SequenceFileInputFormat;
-import org.apache.hadoop.mapred.SequenceFileOutputFormat;
-import org.apache.hadoop.mapred.TextInputFormat;
-import org.apache.hadoop.mapred.TextOutputFormat;
-import org.apache.hadoop.mapred.lib.MultipleInputs;
-import org.apache.hadoop.mapred.lib.MultipleOutputs;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.MSCRMapper;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
@@ -121,21 +122,20 @@ public class MSCRToMapRed {
       }
     }
   }
-  
-  @SuppressWarnings({ "deprecation", "unchecked" })
-  public static JobConf getMapRed(final MSCR mscr, PlumeWorkflow workflow, String jobId, String outputPath) {
-    Configuration conf = new Configuration();
 
-    JobConf job = new JobConf(conf, MSCRToMapRed.class);
-    job.setJobName("MSCR " + jobId);
+  public static Job getMapRed(final MSCR mscr, PlumeWorkflow workflow, String jobId, String outputPath) 
+    throws IOException {
+    
+    Configuration conf = new Configuration();
+    conf.set(WORKFLOW_NAME, workflow.getClass().getName());
+    conf.set(MSCR_ID, mscr.getId()+"");
+
+    Job job = new Job(conf, "MSCR");
 
     job.setMapOutputKeyClass(PlumeObject.class);
     job.setMapOutputValueClass(PlumeObject.class);
 
     job.setJarByClass(MSCRToMapRed.class);
-
-    job.set(WORKFLOW_NAME, workflow.getClass().getName());
-    job.set(MSCR_ID, mscr.getId()+"");
     
     /**
      * Inputs
