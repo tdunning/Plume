@@ -34,10 +34,17 @@ import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * Dummy executor that goes down-top by using recursive formulas and stores all intermediate results in-memory. 
+ * Dummy local executor that goes down-top by using recursive formulas and stores all intermediate results in-memory. 
  */
 public class LocalExecutor {
 
+  /**
+   * Execute one-output flow
+   * 
+   * @param <T>
+   * @param output
+   * @return
+   */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> Iterable<T> execute(LazyCollection<T> output) {
     if (output.isMaterialized()) {

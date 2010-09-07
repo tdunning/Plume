@@ -33,17 +33,16 @@ import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.OneToOneOp;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
+/**
+ * This class is an extension to {@link Optimizer} that decouples some of its logic to make testing more easy.
+ */
 public class OptimizerTools {
   
   /**
    * This utility returns all the different MSCR blocks that can be created from this plan
-   * 
-   * @param <T>
-   * @param output
-   * @return
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  public static Set<MSCR> getMSCRBlocks(List<PCollection> outputs) {
+  static Set<MSCR> getMSCRBlocks(List<PCollection> outputs) {
     List<GroupByKey<?, ?>> groupBys = new ArrayList<GroupByKey<?, ?>>();
     for(PCollection<?> output: outputs) {
       List<GroupByKey<?, ?>> partialGroupBys = OptimizerTools.getAllGroupByKeys(output);
@@ -149,12 +148,9 @@ public class OptimizerTools {
   }
   
   /**
-   * Navigate through all the tree and return the set of GroupByKey nodes found
-   * 
-   * @param output
-   * @return
+   * This utility navigates through all the tree and return the set of GroupByKey nodes found
    */
-  public static List<GroupByKey<?, ?>> getAllGroupByKeys(PCollection<?> output) {
+  static List<GroupByKey<?, ?>> getAllGroupByKeys(PCollection<?> output) {
     List<GroupByKey<?, ?>> groupByKeys = new ArrayList<GroupByKey<?, ?>>();
     Stack<LazyCollection<?>> toVisit = new Stack<LazyCollection<?>>();
     Set<LazyCollection<?>> visited = new HashSet<LazyCollection<?>>();

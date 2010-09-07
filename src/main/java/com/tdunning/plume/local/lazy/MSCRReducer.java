@@ -30,23 +30,23 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
-import com.tdunning.plume.local.lazy.MSCRToMapRed.PlumeObject;
+import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * Reducer that is used to execute MSCR in MapReds - Work-in-progress
+ * Reducer that is used to execute MSCR in MapReds
  */
 public class MSCRReducer extends Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable> {
 
   MultipleOutputs mos;
-  MSCR mscr;
+  MSCR mscr; // Current MSCR being executed
   
   protected void setup(Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable>.Context context)
     throws IOException, InterruptedException {
 
     this.mos  = new MultipleOutputs(context);
-    this.mscr = MSCRMapRedBase.readMSCR(context.getConfiguration());
+    this.mscr = MapRedExecutor.readMSCR(context.getConfiguration());
   }
   
   protected void cleanup(Reducer<PlumeObject, PlumeObject, NullWritable, NullWritable>.Context context) 

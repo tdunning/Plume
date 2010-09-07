@@ -35,7 +35,7 @@ import com.tdunning.plume.local.lazy.op.MultipleParallelDo;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * These basic tests can be used to assert that the Optimizer behaves correctly for all basic operations 
+ * These basic tests can be used to assert that the {@link Optimizer} behaves correctly for all basic operations 
  */
 public class BasicOptimizerTest extends BaseTestClass {
   

@@ -25,12 +25,17 @@ import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.Tuple2;
 import com.tdunning.plume.local.lazy.op.CombineValues;
+import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
 import com.tdunning.plume.types.PType;
 
+/**
+ * A LazyTable that can be either materialized or unmaterialized. 
+ * Unmaterialized collections have a reference to the {@link DeferredOp} that creates them.
+ */
 public class LazyTable<K, V> extends LazyCollection<Pair<K, V>> implements PTable<K, V> {
 
   public LazyTable() {

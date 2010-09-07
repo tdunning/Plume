@@ -21,7 +21,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Defines an execution plan recursively from a first ExecutionStep.
+ * Defines an execution plan recursively from a first ExecutionStep. 
+ * All the MSCRs in an ExecutionStep can be executed concurrently.
  */
 public class ExecutionStep {
 

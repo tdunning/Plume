@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.tdunning.plume.local.lazy;
 
 import static com.tdunning.plume.Plume.collectionOf;
@@ -26,8 +43,15 @@ import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 
-public class HadoopComplexTest {
+/**
+ * This test shows how three different group by's can be performed using Plume API which output three different
+ * things and end up being executed in a single Map/Red job by using {@link MapRedExecutor}.
+ */
+public class MapRedComplexTest {
 
+  /**
+   * The PlumeWorkflow class is extendend so that it can be instantiated via reflection at hadoop mappers/reducers
+   */
   public static class ComplexWorkflow extends PlumeWorkflow {
 
     @SuppressWarnings("unchecked")
@@ -35,10 +59,12 @@ public class HadoopComplexTest {
     public void build() {
       init();
       
+      // Get one input file
       LazyPlume plume = new LazyPlume();
       PCollection input;
       try {
         input = plume.readFile("/tmp/input-wordcount.txt", collectionOf(strings()));
+        // Add as input
         addInput(input);
       } catch (IOException e) {
         throw new RuntimeException();
@@ -46,6 +72,7 @@ public class HadoopComplexTest {
       
       final IntWritable one = new IntWritable(1);
       
+      // Define a reducer that counts all the grouped values
       DoFn countReduce = 
         new DoFn<Pair<WritableComparable, Iterable<IntWritable>>, Pair<WritableComparable, IntWritable>>() {
         @Override
@@ -60,7 +87,7 @@ public class HadoopComplexTest {
         }
       };
       
-      // Count and group by #chars of line
+      // Define a map that counts and group by #chars of line
       PCollection po1 = input.map(new DoFn<Text, Pair<IntWritable, IntWritable>>() {
         @Override
         public void process(Text v, EmitFn<Pair<IntWritable, IntWritable>> emitter) {
@@ -75,7 +102,7 @@ public class HadoopComplexTest {
        .groupByKey()
        .map(countReduce, tableOf(integers(), integers()));
       
-      // Count and group by #tokens of line
+      // Define a map that counts and group by #tokens of line
       PCollection po2 = input.map(new DoFn<Text, Pair<IntWritable, IntWritable>>() {
         @Override
         public void process(Text v, EmitFn<Pair<IntWritable, IntWritable>> emitter) {
@@ -91,7 +118,7 @@ public class HadoopComplexTest {
        .groupByKey()
        .map(countReduce, tableOf(integers(), integers()));
       
-      // Count appearances of chars
+      // Define a map that counts appearances of chars
       PCollection po3 = input.map(new DoFn<Text, Pair<Text, IntWritable>>() {
         @Override
         public void process(Text v, EmitFn<Pair<Text, IntWritable>> emitter) {
@@ -107,6 +134,7 @@ public class HadoopComplexTest {
        .groupByKey()
        .map(countReduce, tableOf(strings(), integers()));
       
+      // Add the output of the three grup by's to this workflow's outputs
       addOutput(po1);
       addOutput(po2);
       addOutput(po3);
@@ -117,29 +145,20 @@ public class HadoopComplexTest {
   public void test() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
     String outputPath = "/tmp/output-mscrtomapred-complex";
-    
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
     // Prepare output for test
     system.delete(new Path(outputPath), true);
-    
     // Prepare workflow
     ComplexWorkflow workFlow = new ComplexWorkflow();
-    
-    // Get MSCR to convert to MapRed
-    Optimizer optimizer = new Optimizer();
-    ExecutionStep step = optimizer.optimize(workFlow);
-    MSCR mscr = step.getMscrSteps().iterator().next();
-
-    // Run Job
-    Job job = MSCRToMapRed.getMapRed(mscr, workFlow, "Complex", outputPath);
-    job.setJarByClass(HadoopComplexTest.class);
-    job.waitForCompletion(true);   
+    // Execute it
+    MapRedExecutor executor = new MapRedExecutor();
+    executor.execute(workFlow, outputPath);
     
     // Just assert that 3 output files were written and have content
     for(int i = 1; i <= 3; i++) {
-      File f = new File(outputPath+"/"+i+"-r-00000");
+      File f = new File(outputPath+"/1/"+i+"-r-00000");
       assertTrue(f.exists());
       assertTrue(f.length() > 100);
     }

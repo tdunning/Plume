@@ -34,9 +34,9 @@ import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 
 /**
- * These basic tests can be used to assert that the Executor behaves correctly for all basic operations 
+ * These basic tests assert that the {@link LocalExecutor} behaves correctly for all basic operations 
  */
-public class BasicExecutorTest extends BaseTestClass {
+public class LocalExecutorTest extends BaseTestClass {
 
   /**
    * This test runs a chain of two "ParallelDo" operations: (x+1), (x*2)

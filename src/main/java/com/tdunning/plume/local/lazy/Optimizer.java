@@ -36,7 +36,12 @@ import com.tdunning.plume.local.lazy.op.OneToOneOp;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
- * First version of Optimizer. It needs more testing.
+ * First version of Optimizer.
+ * 
+ * Known limitations:
+ * 
+ * - It doesn't add "bypass-inputs" to MSCRs. A Bypass input can be simulated by doing a dummy groupBy() 
+ *  that doesn't do nothing.
  */
 public class Optimizer {
 
@@ -142,11 +147,8 @@ public class Optimizer {
   /**
    * Removes unnecesary operations that are not removed by the Optimizer. It goes top-down (receives an Input).
    * Returns true if passed node doesn't lead to an output.
-   * 
-   * @param <T>
-   * @param arg
    */
-  public boolean removeUnnecessaryOps(PCollection arg, List<PCollection> outputs) {
+  boolean removeUnnecessaryOps(PCollection arg, List<PCollection> outputs) {
     LazyCollection<?> input = (LazyCollection)arg;
     if(input.getDownOps() == null || input.getDownOps().size() == 0) { // Leaf node
       return !outputs.contains(input);
@@ -181,7 +183,7 @@ public class Optimizer {
    * @param arg  The collection that may contain flatten operations that we need to sink.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> void sinkFlattens(PCollection<T> arg) {
+  <T> void sinkFlattens(PCollection<T> arg) {
     LazyCollection<T> output = (LazyCollection<T>)arg;
     if(output.isMaterialized()) { // stop condition for recursive algorithm
       return;
@@ -234,7 +236,7 @@ public class Optimizer {
    * @param arg  The original collection that may contain sibling do chains
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> void fuseSiblingParallelDos(PCollection<T> arg) {
+  <T> void fuseSiblingParallelDos(PCollection<T> arg) {
     LazyCollection<T> output = (LazyCollection<T>)arg;
     if(output.isMaterialized()) { // stop condition for recursive algorithm
       return;
@@ -298,7 +300,7 @@ public class Optimizer {
    * @param arg  The collection that may have compositions internally.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> void fuseParallelDos(PCollection<T> arg) {
+  <T> void fuseParallelDos(PCollection<T> arg) {
     LazyCollection<T> output = (LazyCollection<T>)arg;
     if(output.isMaterialized()) { // stop condition for recursive algorithm
       return;

@@ -25,20 +25,20 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import com.google.common.collect.Lists;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
-import com.tdunning.plume.local.lazy.MSCRToMapRed.PlumeObject;
+import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 
 /**
- * Combiner that is used to executed MSCR in Map/reds - Work in progress
+ * Combiner that is used to executed MSCR in Map/reds
  */
 public class MSCRCombiner extends Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject> {
 
-  MSCR mscr;
+  MSCR mscr; // Current MSCR being executed
   
   protected void setup(Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject>.Context context)
     throws IOException, InterruptedException {
 
-    this.mscr = MSCRMapRedBase.readMSCR(context.getConfiguration());
+    this.mscr = MapRedExecutor.readMSCR(context.getConfiguration());
   }
   
   @SuppressWarnings("unchecked")

@@ -33,7 +33,7 @@ import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 
 /**
- * Work in progress: more testing is needed
+ * This set of tests assert that the {@link Optimizer} works under well-known schemas like the ones in FlumeJava paper.
  */
 public class TestOptimizer extends BaseTestClass {
 

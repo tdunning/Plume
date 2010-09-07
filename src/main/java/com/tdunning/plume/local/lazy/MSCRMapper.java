@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapreduce.lib.input;
+package com.tdunning.plume.local.lazy;
 
 import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.FileInputSplitWrapper;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.local.lazy.LazyCollection;
-import com.tdunning.plume.local.lazy.MSCR;
-import com.tdunning.plume.local.lazy.MSCRMapRedBase;
-import com.tdunning.plume.local.lazy.MSCRToMapRed.PlumeObject;
+import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
 import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.Flatten;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
@@ -39,16 +38,16 @@ import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.PTableType;
 
 /**
- * Mapper that is used to execute MSCR in MapReds - Work-in-progress.
+ * Mapper that is used to execute MSCR in MapReds
  */
 public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>  {
   
-  MSCR mscr;
+  MSCR mscr; // Current MSCR being executed
   
   protected void setup(Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>.Context context) 
     throws IOException, InterruptedException {
   
-    this.mscr = MSCRMapRedBase.readMSCR(context.getConfiguration());
+    this.mscr = MapRedExecutor.readMSCR(context.getConfiguration());
   };
 
   @SuppressWarnings("unchecked")
@@ -58,9 +57,7 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
   
     LazyCollection<?> l = null;
 
-    // This class is private!
-    TaggedInputSplit t = (TaggedInputSplit)context.getInputSplit();
-    FileSplit fS = (FileSplit)t.getInputSplit();
+    FileSplit fS = FileInputSplitWrapper.getFileInputSplit(context);
     
     // Get LazyCollection for this input (according to FileSplit)
     for(PCollection<?> input: mscr.getInputs()) {

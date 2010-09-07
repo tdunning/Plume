@@ -33,7 +33,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -48,10 +47,12 @@ import com.tdunning.plume.Pair;
 import com.tdunning.plume.types.PCollectionType;
 import com.tdunning.plume.types.StringType;
 
+import static com.tdunning.plume.Plume.*;
+
 /**
- * Test the conversion of MSCR to MapRed by running a simple MSCR in local hadoop
+ * This test asserts that {@link MapRedExecutor} behaves well under the famous WordCount test
  */
-public class HadoopWordCountTest {
+public class MapRedWordCountTest {
 
   /**
    * The WordCount Workflow
@@ -69,12 +70,15 @@ public class HadoopWordCountTest {
       LazyPlume plume = new LazyPlume();
       PCollection input;
       try {
-        input = plume.readFile("/tmp/input-wordcount.txt", new PCollectionType(new StringType()));
+        // Read input
+        input = plume.readFile("/tmp/input-wordcount.txt", collectionOf(strings()));
+        // Add it as workflow's input
         addInput(input);
       } catch (IOException e) {
         throw new RuntimeException();
       }
       
+      // Define the wordcount map
       DoFn wordCountMap = new DoFn<Text, Pair<Text, IntWritable>>() {
         @Override
         public void process(Text v,
@@ -85,6 +89,7 @@ public class HadoopWordCountTest {
           }
         }
       };
+      // Define the wordcount combiner
       final CombinerFn wordCountCombiner = new CombinerFn<IntWritable>() {
         @Override
         public IntWritable combine(Iterable<IntWritable> stuff) {
@@ -95,6 +100,7 @@ public class HadoopWordCountTest {
           return new IntWritable(c);
         }
       };
+      // Define the wordcount reducer
       DoFn wordCountReduce = new DoFn<Pair<Text, Iterable<IntWritable>>, Pair<Text, Text>>() {
         @Override
         public void process(Pair<Text, Iterable<IntWritable>> v,
@@ -103,11 +109,13 @@ public class HadoopWordCountTest {
         }
       };
 
+      // Define the wordcount workflow
       PCollection output = input.map(wordCountMap, tableOf(strings(), integers()))
         .groupByKey()
         .combine(wordCountCombiner)
         .map(wordCountReduce, tableOf(strings(), strings()));
       
+      // Add wordcount's output as workflow's output
       addOutput(output);
     }
   }
@@ -123,27 +131,18 @@ public class HadoopWordCountTest {
   public void testWordCount() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
     String outputPath = "/tmp/output-mscrtomapred-wordcount";
-    
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
     // Prepare output for test
     system.delete(new Path(outputPath), true);
-    
     // Prepare workflow
     WordCountWorkflow workFlow = new WordCountWorkflow();
+    // Execute it
+    MapRedExecutor executor = new MapRedExecutor();
+    executor.execute(workFlow, outputPath);
     
-    // Get MSCR to convert to MapRed
-    Optimizer optimizer = new Optimizer();
-    ExecutionStep step = optimizer.optimize(workFlow);
-    MSCR mscr = step.getMscrSteps().iterator().next();
-
-    // Run Job
-    Job job = MSCRToMapRed.getMapRed(mscr, workFlow, "WordCount", outputPath);
-    job.setJarByClass(HadoopWordCountTest.class);
-    job.waitForCompletion(true);
-    
-    List<String> str = Files.readLines(new File(outputPath+"/1-r-00000"), Charsets.UTF_8);
+    List<String> str = Files.readLines(new File(outputPath+"/1/1-r-00000"), Charsets.UTF_8);
     
     Map<String, String> m = Maps.newHashMap();
     for (String line: str) {
