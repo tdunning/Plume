@@ -24,6 +24,7 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import com.google.common.collect.Lists;
+import com.tdunning.plume.PCollection;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
@@ -45,9 +46,9 @@ public class MSCRCombiner extends Reducer<PlumeObject, PlumeObject, PlumeObject,
   protected void reduce(final PlumeObject arg0, java.lang.Iterable<PlumeObject> values,
       Reducer<PlumeObject, PlumeObject, PlumeObject, PlumeObject>.Context context)
     throws IOException, InterruptedException {
-    
-    GroupByKey gBK = mscr.getChannelByNumber().get(arg0.sourceId);
-    OutputChannel oC = mscr.getOutputChannels().get(gBK);
+
+    PCollection col  = mscr.getChannelByNumber().get(arg0.sourceId);
+    OutputChannel oC = mscr.getOutputChannels().get(col);
     if(oC.combiner != null) {
       // Apply combiner function for this channel
       List<WritableComparable> vals = Lists.newArrayList();

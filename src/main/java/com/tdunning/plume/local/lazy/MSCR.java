@@ -51,12 +51,11 @@ public class MSCR {
   }
 
   private Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
-  private Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> outputChannels = 
-    new HashMap<GroupByKey<?, ?>, OutputChannel<?, ?, ?>>();
-  private Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
+  private Map<PCollection<?>, OutputChannel<?, ?, ?>> outputChannels = 
+    new HashMap<PCollection<?>, OutputChannel<?, ?, ?>>();
 
-  private Map<GroupByKey<?, ?>, Integer> numberedChannels = new HashMap<GroupByKey<?, ?>, Integer>();
-  private Map<Integer, GroupByKey<?, ?>> channelByNumber  = new HashMap<Integer, GroupByKey<?, ?>>();
+  private Map<PCollection<?>, Integer> numberedChannels = new HashMap<PCollection<?>, Integer>();
+  private Map<Integer, PCollection<?>> channelByNumber  = new HashMap<Integer, PCollection<?>>();
  
   private int nChannels = 0;
   
@@ -71,8 +70,15 @@ public class MSCR {
     CombineValues<K, V> combiner = null;
     ParallelDo<Pair<K, V>, T> reducer = null;
     
+    PCollection<?> output = null;
+    
     public OutputChannel(GroupByKey<K, V> shuffle) {
       this.shuffle = shuffle;
+    }
+    
+    // By-pass channel
+    public OutputChannel(PCollection<?> output) {
+      this.output = output;
     }
 
     public Flatten<Pair<K, V>> getFlatten() {
@@ -92,12 +98,8 @@ public class MSCR {
     }
   }
   
-  public Map<GroupByKey<?, ?>, OutputChannel<?, ?, ?>> getOutputChannels() {
+  public Map<PCollection<?>, OutputChannel<?, ?, ?>> getOutputChannels() {
     return outputChannels;
-  }
-
-  public Set<PCollection<?>> getBypassChannels() {
-    return bypassChannels;
   }
 
   public Set<PCollection<?>> getInputs() {
@@ -112,41 +114,27 @@ public class MSCR {
     return inputs.contains(input);
   }
   
-  public <K, V> boolean hasOutputChannel(GroupByKey<K, V> groupByChannel) {
-    return outputChannels.containsKey(groupByChannel);
+  public <T> boolean hasOutputChannel(PCollection<T> indexBy) {
+    return outputChannels.containsKey(indexBy);
   }
-  
-  public <T> boolean hasOutputChannel(PCollection<T> byPassChannel) {
-    return bypassChannels.contains(byPassChannel);
-  }
-  
-  public <T> void addOutputChannel(PCollection<T> byPassChannel) {
-    bypassChannels.add(byPassChannel);
-  }
-  
+
   public <K, V, T> void addOutputChannel(OutputChannel<K, V, T> outputChannel) {
-    if(outputChannel.shuffle == null) {
-      throw new IllegalArgumentException("Output Channel with no Shuffle");
-    }
     nChannels++;
-    outputChannels.put(outputChannel.shuffle, outputChannel);
-    getNumberedChannels().put(outputChannel.shuffle, nChannels);
-    getChannelByNumber().put(nChannels, outputChannel.shuffle);
+    // TODO explain this
+    PCollection<?> indexBy = outputChannel.output;
+    if(outputChannel.shuffle != null) {
+      indexBy = outputChannel.shuffle.getOrigin();
+    }
+    outputChannels.put(indexBy, outputChannel);
+    getNumberedChannels().put(indexBy, nChannels);
+    getChannelByNumber().put(nChannels, indexBy);
   }
 
-  void setNumberedChannels(Map<GroupByKey<?, ?>, Integer> numberedChannels) {
-    this.numberedChannels = numberedChannels;
-  }
-
-  public Map<GroupByKey<?, ?>, Integer> getNumberedChannels() {
+  public Map<PCollection<?>, Integer> getNumberedChannels() {
     return numberedChannels;
   }
-
-  void setChannelByNumber(Map<Integer, GroupByKey<?, ?>> channelByNumber) {
-    this.channelByNumber = channelByNumber;
-  }
-
-  public Map<Integer, GroupByKey<?, ?>> getChannelByNumber() {
+  
+  public Map<Integer, PCollection<?>> getChannelByNumber() {
     return channelByNumber;
   }
 }

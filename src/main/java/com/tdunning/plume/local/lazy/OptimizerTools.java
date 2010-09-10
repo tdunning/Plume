@@ -20,6 +20,7 @@ package com.tdunning.plume.local.lazy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -59,6 +60,7 @@ public class OptimizerTools {
       // Gather all information needed for MSCR from this GBK
       Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
       Set<GroupByKey<?, ?>> outputChannels = new HashSet<GroupByKey<?, ?>>();
+      Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
       Stack<LazyCollection<?>> toVisit = new Stack<LazyCollection<?>>();
       Set<LazyCollection<?>> visited = new HashSet<LazyCollection<?>>();
       LazyCollection<?> origin = (LazyCollection<?>)groupBy.getOrigin();
@@ -75,6 +77,13 @@ public class OptimizerTools {
         if(op instanceof MultipleParallelDo) { // second condition for being an input
           MultipleParallelDo<?> mPDo = (MultipleParallelDo)current.getDeferredOp();
           inputs.add(mPDo.getOrigin());
+          // Check for bypass channels
+          for(Map.Entry entry: mPDo.getDests().entrySet()) {
+            LazyCollection coll = (LazyCollection)entry.getKey();
+            if(coll.getDownOps() == null || coll.getDownOps().size() == 0) {
+              bypassChannels.add(coll);
+            }
+          }
           continue;
         }
         if(op instanceof GroupByKey) { // third condition for being an input - rare case when one GBK follows another
@@ -119,17 +128,29 @@ public class OptimizerTools {
           mscrToAdd.addInput(input);
         }
       }
+      // Add all missing ungroupped outputs to current MSCR
+      for(PCollection<?> col: bypassChannels) {
+        if(!mscrToAdd.hasOutputChannel(col)) {
+          // Create new by-pass channel
+          MSCR.OutputChannel oC = new MSCR.OutputChannel(col);
+          mscrToAdd.addOutputChannel(oC);
+        }
+      }
       // Add all missing output channels to current MSCR
-      for(GroupByKey outputChannel: outputChannels) {
-        if(!mscrToAdd.hasOutputChannel(outputChannel)) {
-          MSCR.OutputChannel oC = new MSCR.OutputChannel(outputChannel);
-          if(outputChannel.getOrigin().getDeferredOp() instanceof Flatten) {
-            oC.flatten = (Flatten)outputChannel.getOrigin().getDeferredOp();
+      for(GroupByKey groupByKey: outputChannels) {
+        if(!mscrToAdd.hasOutputChannel(groupByKey.getOrigin())) {
+          // Create new channel with group by key. It might have combiner and reducer as well.
+          MSCR.OutputChannel oC = new MSCR.OutputChannel(groupByKey);
+          oC.output = groupByKey.getDest();
+          if(groupByKey.getOrigin().getDeferredOp() instanceof Flatten) {
+            oC.flatten = (Flatten)groupByKey.getOrigin().getDeferredOp();
+            oC.output = oC.flatten.getDest();
           }
-          if(outputChannel.getDest().getDownOps() != null && outputChannel.getDest().getDownOps().size() == 1) {
-            DeferredOp op = (DeferredOp)outputChannel.getDest().getDownOps().get(0);
+          if(groupByKey.getDest().getDownOps() != null && groupByKey.getDest().getDownOps().size() == 1) {
+            DeferredOp op = (DeferredOp)groupByKey.getDest().getDownOps().get(0);
             if(op instanceof CombineValues) {
               oC.combiner = (CombineValues)op;
+              oC.output = oC.combiner.getDest();
               LazyCollection dest = (LazyCollection)oC.combiner.getDest();
               if(dest.getDownOps() != null && dest.getDownOps().size() == 1) {
                 op = (DeferredOp)dest.getDownOps().get(0);
@@ -137,6 +158,7 @@ public class OptimizerTools {
             }
             if(op instanceof ParallelDo) {
               oC.reducer = (ParallelDo)op;
+              oC.output = oC.reducer.getDest();
             }
           }
           mscrToAdd.addOutputChannel(oC);

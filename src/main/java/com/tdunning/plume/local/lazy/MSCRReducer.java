@@ -28,6 +28,7 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import com.google.common.collect.Lists;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
+import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
@@ -60,8 +61,8 @@ public class MSCRReducer extends Reducer<PlumeObject, PlumeObject, NullWritable,
       Reducer<PlumeObject,PlumeObject,NullWritable,NullWritable>.Context arg2)
     throws IOException, InterruptedException {
     
-    GroupByKey gBK = mscr.getChannelByNumber().get(arg0.sourceId);
-    OutputChannel oC = mscr.getOutputChannels().get(gBK);
+    PCollection col  = mscr.getChannelByNumber().get(arg0.sourceId);
+    OutputChannel oC = mscr.getOutputChannels().get(col);
     if(oC.reducer != null) {
       // apply reducer
       ParallelDo pDo = oC.reducer;

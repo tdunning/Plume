@@ -53,8 +53,6 @@ import org.apache.log4j.Logger;
 
 import com.google.common.io.Files;
 import com.tdunning.plume.PCollection;
-import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
-import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.types.BooleanType;
 import com.tdunning.plume.types.BytesType;
 import com.tdunning.plume.types.DoubleType;
@@ -75,7 +73,7 @@ public class MapRedExecutor {
   final static String WORKFLOW_NAME = "plume.workflow.name"; // hadoop conf. property used to instantiate proper workflow
   final static String MSCR_ID = "plume.workflow.mscr.id"; // Identifies current MSCR being executed
 
-  String outputFolder = "/tmp/plume-mrexecutor";
+  String tmpOutputFolder;
   ExecutorService executor = Executors.newCachedThreadPool();
   
   final static Logger log = Logger.getLogger(MapRedExecutor.class);
@@ -136,7 +134,7 @@ public class MapRedExecutor {
   }
     
   public MapRedExecutor() {
-    
+    this("/tmp/plume-mrexecutor");
   }
 
   /**
@@ -144,8 +142,16 @@ public class MapRedExecutor {
    * 
    * @param outputFolder
    */
-  public MapRedExecutor(String outputFolder) {
-    this.outputFolder = outputFolder;
+  public MapRedExecutor(String tmpOutputFolder) {
+    this.tmpOutputFolder = tmpOutputFolder;
+    File f = new File(this.tmpOutputFolder);
+    if(f.exists()) {
+      try {
+        Files.deleteRecursively(f);
+      } catch (IOException e) {
+        log.error(e);
+      }
+    }
   }
 
   /**
@@ -177,7 +183,7 @@ public class MapRedExecutor {
       // For each MSCR that can be executed concurrently...
       for(final MSCR mscr: step.mscrSteps) {
         final String jobId =  workFlowId + "/" + mscr.getId(); 
-        final String outputPath = outputFolder + "/" + jobId;
+        final String outputPath = tmpOutputFolder + "/" + jobId;
         log.info("Triggering execution of jobId " + jobId + ". Its output will be saved to " + outputPath);
         // ... Get its MapRed Job
         final Job job = getMapRed(mscr, workFlow, outputPath);
@@ -189,16 +195,10 @@ public class MapRedExecutor {
               job.waitForCompletion(true);
               // job completed successfully - materialize outputs
               log.info("jobId " + jobId + " completed successfully, now materializing outputs.");
-              for(Map.Entry<Integer, GroupByKey<?, ?>> entry: mscr.getChannelByNumber().entrySet()) {
-                MSCR.OutputChannel<?, ?, ?> oC = mscr.getOutputChannels().get(entry.getValue());
-                LazyCollection<?> oCol = entry.getValue().getDest();
-                if(oC.reducer != null) {
-                  oCol = (LazyCollection<?>)oC.reducer.getDest();
-                } else if(oC.combiner != null) {
-                  oCol = (LazyCollection<?>)oC.combiner.getDest();                  
-                }
+              for(Map.Entry<PCollection<?>, Integer> entry: mscr.getNumberedChannels().entrySet()) {
+                LazyCollection<?> oCol = (LazyCollection<?>)mscr.getOutputChannels().get(entry.getKey()).output;
                 oCol.materialized = true;
-                oCol.setFile(outputPath + "/" + entry.getKey() + "-r-*"); // wildcard to this cannel's output TODO support wildcards as input
+                oCol.setFile(outputPath + "/" + entry.getValue() + "-r-*"); // wildcard to this cannel's output
               }
             } catch (IOException e) {
               log.warn("One Job failed: " + jobId + ", current Workflow will be aborted ", e);
@@ -223,7 +223,7 @@ public class MapRedExecutor {
     } while(step != null);    
     log.info("Workflow ended correctly.");
     // Move temporary result to where API user wants to: WARN: Local-specific implementation
-    Files.move(new File(outputFolder + "/" + workFlowId ), new File(outputTo));
+    Files.move(new File(tmpOutputFolder + "/" + workFlowId ), new File(outputTo));
   }
 
   /**
@@ -281,12 +281,8 @@ public class MapRedExecutor {
      * Define multiple outputs
      */
     FileOutputFormat.setOutputPath(job, new Path(outputPath));
-    for(Map.Entry<GroupByKey<?, ?>, Integer> entry: mscr.getNumberedChannels().entrySet()) {
-      OutputChannel<?, ?, ?> oC = mscr.getOutputChannels().get(entry.getKey());
-      PCollectionType<?> rType = entry.getKey().getDest().getType();
-      if(oC.reducer != null) {
-        rType = ((LazyCollection<?>)oC.reducer.getDest()).getType();
-      }
+    for(Map.Entry<PCollection<?>, Integer> entry: mscr.getNumberedChannels().entrySet()) {
+      PCollectionType<?> rType = ((LazyCollection<?>)mscr.getOutputChannels().get(entry.getKey()).output).getType();
       if(rType instanceof PTableType) {
         PTableType<?, ?> tType = (PTableType<?, ?>)rType;
         Class<? extends OutputFormat> outputFormat = SequenceFileOutputFormat.class;

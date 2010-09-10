@@ -86,15 +86,9 @@ public class Optimizer {
     // Build a map of output -> MSCR step
     Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
     for(MSCR mscr: mscrs) {
-      for(Map.Entry<GroupByKey<?,?>, MSCR.OutputChannel<?,?,?>> entry: mscr.getOutputChannels().entrySet()) {
+      for(Map.Entry<PCollection<?>, MSCR.OutputChannel<?,?,?>> entry: mscr.getOutputChannels().entrySet()) {
         MSCR.OutputChannel<?,?,?> oC = entry.getValue();
-        if(oC.reducer != null) {
-          outputMap.put(oC.reducer.getDest(), mscr);
-        } else if(oC.combiner != null) {
-          outputMap.put(oC.combiner.getDest(), mscr);
-        } else {
-          outputMap.put(oC.shuffle.getDest(), mscr);
-        }
+        outputMap.put(oC.output, mscr);
       }
     }
     // Calculate dependencies between MSCRs

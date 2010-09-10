@@ -17,7 +17,7 @@
 
 package com.tdunning.plume.local.lazy;
 
-import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.collectionOf;
 import static com.tdunning.plume.Plume.strings;
 import static com.tdunning.plume.Plume.tableOf;
 import static org.junit.Assert.assertEquals;
@@ -26,12 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.Test;
 
@@ -39,30 +37,26 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.tdunning.plume.CombinerFn;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
-import com.tdunning.plume.types.PCollectionType;
-import com.tdunning.plume.types.StringType;
-
-import static com.tdunning.plume.Plume.*;
 
 /**
- * This test asserts that {@link MapRedExecutor} behaves well under the famous WordCount test
+ * This test asserts that bypass channels as described in FlumeJava paper work for Plume MSCRs.
  */
-public class MapRedWordCountTest {
+public class MapRedBypassTest {
 
   /**
-   * The WordCount Workflow
+   * In this example we open a file and apply two functions to it. One of them performs a group by key and the other one
+   *  just adds as output the result of the second function (bypass channel).
    */
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public static class WordCountWorkflow extends PlumeWorkflow {
-    
-    public WordCountWorkflow() {
+  public static class MapRedBypassWorkflow extends PlumeWorkflow {
+
+    public MapRedBypassWorkflow() {
     }
     
+    @SuppressWarnings("unchecked")
     @Override
     public void build() {
       init();
@@ -78,79 +72,57 @@ public class MapRedWordCountTest {
         throw new RuntimeException();
       }
       
-      // Define the wordcount map
-      DoFn wordCountMap = new DoFn() {
+      PCollection bypassTransform = input.map(new DoFn() {
         @Override
         public void process(Object v, EmitFn emitter) {
-          StringTokenizer itr = new StringTokenizer(v.toString());
-          while (itr.hasMoreTokens()) {
-            emitter.emit(Pair.create(new Text(itr.nextToken()), new IntWritable(1)));
-          }
-        }
-      };
-      // Define the wordcount combiner
-      final CombinerFn wordCountCombiner = new CombinerFn<IntWritable>() {
-        @Override
-        public IntWritable combine(Iterable<IntWritable> stuff) {
-          int c = 0;
-          for(IntWritable i : stuff) {
-            c += i.get();
-          }
-          return new IntWritable(c);
-        }
-      };
-      // Define the wordcount reducer
-      DoFn wordCountReduce = new DoFn() {
-        @Override
-        public void process(Object v, EmitFn emitter) {
-          Pair p = (Pair)v;
-          emitter.emit(Pair.create(p.getKey(), new Text(""+wordCountCombiner.combine((Iterable<IntWritable>)p.getValue()))));
-        }
-      };
-
-      // Define the wordcount workflow
-      PCollection output = input.map(wordCountMap, tableOf(strings(), integers()))
-        .groupByKey()
-        .combine(wordCountCombiner)
-        .map(wordCountReduce, tableOf(strings(), strings()));
+          Text t = (Text)v;
+          emitter.emit(Pair.create(new Text(t + "-blah"), new Text(t + "-bloh")));
+        }}, tableOf(strings(), strings()));
       
-      // Add wordcount's output as workflow's output
-      addOutput(output);
+      addOutput(bypassTransform);
+      
+      PCollection groupedTransform = input.map(new DoFn() {
+        @Override
+        public void process(Object v, EmitFn emitter) {
+          Text t = (Text)v;
+          emitter.emit(Pair.create(t, new Text("foo")));
+        }}, tableOf(strings(), strings())).groupByKey();
+      
+      addOutput(groupedTransform);
     }
   }
-  
-  /**
-   * The wordcount example to test with local hadoop
-   * 
-   * @throws IOException 
-   * @throws ClassNotFoundException 
-   * @throws InterruptedException 
-   */
+
   @Test
-  public void testWordCount() throws IOException, InterruptedException, ClassNotFoundException {
+  public void test() throws Exception {
+    String outputPath = "/tmp/output-bypasstest";
     String inputPath = "/tmp/input-wordcount.txt";
-    String outputPath = "/tmp/output-mscrtomapred-wordcount";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
     // Prepare output for test
     system.delete(new Path(outputPath), true);
     // Prepare workflow
-    WordCountWorkflow workFlow = new WordCountWorkflow();
+    MapRedBypassWorkflow workFlow = new MapRedBypassWorkflow();
     // Execute it
     MapRedExecutor executor = new MapRedExecutor();
     executor.execute(workFlow, outputPath);
     
     List<String> str = Files.readLines(new File(outputPath+"/1/1-r-00000"), Charsets.UTF_8);
-    
     Map<String, String> m = Maps.newHashMap();
     for (String line: str) {
       m.put(line.split("\t")[0], line.split("\t")[1]); // not super-optimal, but less code
     }
-    assertEquals(3+"", m.get("is"));
-    assertEquals(3+"", m.get("some"));
-    assertEquals(3+"", m.get("simple"));
-    assertEquals(1+"", m.get("examples"));
-    assertEquals(2+"", m.get("text"));
+    assertEquals(m.get("To test text processing with some simple-blah"), "To test text processing with some simple-bloh");
+    assertEquals(m.get("some simple text-blah"), "some simple text-bloh");
+    assertEquals(m.get("is is-blah"), "is is-bloh");
+    
+    str = Files.readLines(new File(outputPath+"/1/2-r-00000"), Charsets.UTF_8);
+    m = Maps.newHashMap();
+    for (String line: str) {
+      m.put(line.split("\t")[0], line.split("\t")[1]); // not super-optimal, but less code
+    }
+    assertEquals(m.get("To test text processing with some simple"), "foo");
+    assertEquals(m.get("some simple text"), "foo");
+    assertEquals(m.get("is is"), "foo");
   }
 }

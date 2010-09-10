@@ -34,7 +34,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -45,7 +44,7 @@ import com.tdunning.plume.Pair;
 
 /**
  * This test shows how three different group by's can be performed using Plume API which output three different
- * things and end up being executed in a single Map/Red job by using {@link MapRedExecutor}.
+ * things and end up being executed in a single Map/Red job.
  */
 public class MapRedComplexTest {
 

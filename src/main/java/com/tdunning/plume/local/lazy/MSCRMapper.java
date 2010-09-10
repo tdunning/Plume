@@ -62,6 +62,9 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
     // Get LazyCollection for this input (according to FileSplit)
     for(PCollection<?> input: mscr.getInputs()) {
       LazyCollection<?> thisL = (LazyCollection<?>)input;
+      if(thisL.getFile() == null) {
+        throw new RuntimeException("Input PCollection with no materialized file");
+      }
       if(thisL.getFile().equals(fS.getPath().toString()) ||
           ("file:" + thisL.getFile()).equals(fS.getPath().toString())) {
         l = thisL;
@@ -82,16 +85,23 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
       for(Object entry: mPDo.getDests().entrySet()) {
         Map.Entry<PCollection, DoFn> en = (Map.Entry<PCollection, DoFn>)entry;
         LazyCollection<?> lCol = (LazyCollection<?>)en.getKey();
-        op = lCol.getDownOps().get(0); // same here
-        final int channel;
-        if(op instanceof Flatten) {
-          LazyCollection col = (LazyCollection)((Flatten)op).getDest();
+        DeferredOp childOp = null;
+        if(lCol.getDownOps() != null && lCol.getDownOps().size() > 0) {
+          childOp = lCol.getDownOps().get(0);
+        }
+        final Integer channel;
+        if(childOp != null && childOp instanceof Flatten) {
+          LazyCollection col = (LazyCollection)((Flatten)childOp).getDest();
           GroupByKey gBK = (GroupByKey)col.getDownOps().get(0); 
-          channel = mscr.getNumberedChannels().get(gBK);
-        } else if(op instanceof GroupByKey) {
-          channel = mscr.getNumberedChannels().get((GroupByKey)op);
+          channel = mscr.getNumberedChannels().get(gBK.getOrigin());
+        } else if(childOp != null && childOp instanceof GroupByKey) {
+          channel = mscr.getNumberedChannels().get(((GroupByKey)childOp).getOrigin());
         } else {
-          throw new RuntimeException("Invalid MSCR");
+          channel = mscr.getNumberedChannels().get(en.getKey()); // bypass channel?
+        }
+        if(channel == null) {
+          // This is not for this MSCR - just skip it
+          return;
         }
         // Call parallelDo function
         en.getValue().process(toProcess, new EmitFn() {
@@ -111,7 +121,7 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
       }
     } else if(op instanceof Flatten) {
       LazyCollection col = (LazyCollection)((Flatten)op).getDest();
-      GroupByKey gBK = (GroupByKey)col.getDownOps().get(0); // TODO Report these possible exceptions as malformed MSCR
+      GroupByKey gBK = (GroupByKey)col.getDownOps().get(0); 
       int channel = mscr.getNumberedChannels().get(gBK);
       context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
     } else if(op instanceof GroupByKey) {
