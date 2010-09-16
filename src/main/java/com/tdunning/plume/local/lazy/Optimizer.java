@@ -81,17 +81,13 @@ public class Optimizer {
     for(PCollection input: inputs) {
       removeUnnecessaryOps(input, outputs);
     }
-    // We assume there are no disjoint trees
     Set<MSCR> mscrs = OptimizerTools.getMSCRBlocks(outputs);
     // Build a map of output -> MSCR step
     Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
     for(MSCR mscr: mscrs) {
-      int outputCounter = 1;
       for(Map.Entry<PCollection<?>, MSCR.OutputChannel<?,?,?>> entry: mscr.getOutputChannels().entrySet()) {
         MSCR.OutputChannel<?,?,?> oC = entry.getValue();
         outputMap.put(oC.output, mscr);
-//        ((LazyCollection)oC.output).setPlumeId(mscr.getId()+"_"+outputCounter);
-        outputCounter++;
       }
     }
     // Calculate dependencies between MSCRs
@@ -199,7 +195,9 @@ public class Optimizer {
     }
     if(output.getDownOps() == null || output.getDownOps().size() != 1) {
       // Recursively apply this function to parent
-      sinkFlattens(((OneToOneOp)dOp).getOrigin());
+      for(Object col: ((Flatten)dOp).getOrigins()) {
+        sinkFlattens((PCollection)col);
+      }
       return;      
     }
     DeferredOp downOp = output.getDownOps().get(0);

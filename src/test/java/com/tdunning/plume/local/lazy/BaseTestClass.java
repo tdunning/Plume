@@ -20,6 +20,8 @@ package com.tdunning.plume.local.lazy;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.junit.Before;
 
 import static org.junit.Assert.assertEquals;
@@ -37,52 +39,64 @@ import com.tdunning.plume.types.PTableType;
  */
 public class BaseTestClass {
 
-  DoFn<Integer, Integer> plusOne;
-  DoFn<Integer, Integer> timesTwo;
-  DoFn<Integer, Pair<Integer, Integer>> plusTwoPlusThree;
-  DoFn identity;
-  CombinerFn dummyCombiner;
+  final static DoFn<Integer, Integer> plusOne = new DoFn<Integer, Integer>() {
+    @Override
+    public void process(Integer v, EmitFn<Integer> emitter) {
+      emitter.emit(v + 1);
+    }
+  };
   
-  PTableType intIntTable;
+  final static DoFn<Integer, Integer> timesTwo = new DoFn<Integer, Integer>() {
+    @Override
+    public void process(Integer v, EmitFn<Integer> emitter) {
+      emitter.emit(v * 2);
+    }
+  };
   
-  @Before
-  public void initFns() {
-    dummyCombiner = new CombinerFn<Integer>() {
-      @Override
-      public Integer combine(Iterable<Integer> stuff) {
-        return 1;
+  final static DoFn<Integer, Pair<Integer, Integer>> plusTwoPlusThree = new DoFn<Integer, Pair<Integer, Integer>>() {
+    @Override
+    public void process(Integer v, EmitFn<Pair<Integer, Integer>> emitter) {
+      emitter.emit(Pair.create(v, v * 2));
+      emitter.emit(Pair.create(v, v * 3));
+    }
+  };
+  
+  final static DoFn identity = new DoFn() {
+    @Override
+    public void process(Object v, EmitFn emitter) {
+      emitter.emit(v);
+    }      
+  };
+  
+  final static CombinerFn dummyCombiner = new CombinerFn<Integer>() {
+    @Override
+    public Integer combine(Iterable<Integer> stuff) {
+      return 1;
+    }
+  };
+  
+  final static CombinerFn countCombiner = new CombinerFn<IntWritable>() {
+    @Override
+    public IntWritable combine(Iterable<IntWritable> stuff) {
+      int c = 0;
+      for(IntWritable i : stuff) {
+        c += i.get();
       }
-    };
-    identity = new DoFn() {
-      @Override
-      public void process(Object v, EmitFn emitter) {
-        emitter.emit(v);
-      }      
-    };
-    plusOne = new DoFn<Integer, Integer>() {
-      @Override
-      public void process(Integer v, EmitFn<Integer> emitter) {
-        emitter.emit(v + 1);
-      }
-    };
-    timesTwo = new DoFn<Integer, Integer>() {
-      @Override
-      public void process(Integer v, EmitFn<Integer> emitter) {
-        emitter.emit(v * 2);
-      }
-    };
-    plusTwoPlusThree = new DoFn<Integer, Pair<Integer, Integer>>() {
-      @Override
-      public void process(Integer v, EmitFn<Pair<Integer, Integer>> emitter) {
-        emitter.emit(Pair.create(v, v * 2));
-        emitter.emit(Pair.create(v, v * 3));
-      }
-    };
-    intIntTable = new PTableType(new IntegerType(), new IntegerType());
-  }
+      return new IntWritable(c);
+    }
+  };
+  
+  final static DoFn countReduceToText = new DoFn() {
+    @Override
+    public void process(Object v, EmitFn emitter) {
+      Pair p = (Pair)v;
+      emitter.emit(Pair.create(p.getKey(), 
+        new Text(""+countCombiner.combine((Iterable<IntWritable>)p.getValue()))));
+    }
+  };
   
   static void executeAndAssert(LazyCollection<Integer> output, Integer[] expectedResult) {
-    // Get an executor
+    // Get a local executor
     LocalExecutor executor = new LocalExecutor();
     // Execute current plan
     Iterable<Integer> result = executor.execute(output);

@@ -18,6 +18,8 @@
 package com.tdunning.plume.local.lazy;
 
 import static org.junit.Assert.assertEquals;
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.tableOf;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -46,9 +48,9 @@ public class TestOptimizerTools extends BaseTestClass {
     PCollection<Integer> input2 = plume.fromJava(Lists.newArrayList(4, 5, 6));
     PCollection<Integer> output =
     plume.flatten(
-        input1.map(plusTwoPlusThree, intIntTable)
+        input1.map(plusTwoPlusThree, tableOf(integers(), integers()))
         .groupByKey(), 
-        input2.map(plusTwoPlusThree, intIntTable)
+        input2.map(plusTwoPlusThree, tableOf(integers(), integers()))
         .groupByKey())
         .map(new DoFn<Pair<Integer, Iterable<Integer>>, Integer>() {
       @Override
@@ -73,11 +75,13 @@ public class TestOptimizerTools extends BaseTestClass {
     // One inner group by key
     PCollection<?> output =
       plume.flatten(
-          input1.map(plusTwoPlusThree, intIntTable),
-          input2.map(plusTwoPlusThree, intIntTable),
-          input3.map(plusTwoPlusThree, intIntTable).groupByKey().combine(dummyCombiner)
+          input1.map(plusTwoPlusThree, tableOf(integers(), integers())),
+          input2.map(plusTwoPlusThree, tableOf(integers(), integers())),
+          input3.map(plusTwoPlusThree, tableOf(integers(), integers()))
+          .groupByKey()
+          .combine(dummyCombiner)
         )
-        .map(identity, intIntTable)
+        .map(identity, tableOf(integers(), integers()))
         .groupByKey();
     
     List<PCollection> outputs = new ArrayList<PCollection>();

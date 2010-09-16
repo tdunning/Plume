@@ -18,6 +18,8 @@
 package com.tdunning.plume.local.lazy;
 
 import static org.junit.Assert.*;
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.tableOf;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -51,17 +53,23 @@ public class TestOptimizer extends BaseTestClass {
     PCollection input3 = plume.fromJava(Lists.newArrayList(Pair.create(3, 3)));
     PCollection input4 = plume.fromJava(Lists.newArrayList(Pair.create(4, 4)));
     
-    PCollection output1 = plume.flatten(intIntTable,
-        input1.map(identity, intIntTable),   
-        input2.map(identity, intIntTable)).groupByKey();
+    PCollection output1 = plume.flatten(tableOf(integers(), integers()),
+        input1.map(identity, tableOf(integers(), integers())),   
+        input2.map(identity, tableOf(integers(), integers())))
+        .groupByKey();
         
-    PCollection output2 = plume.flatten(intIntTable,
-        input2.map(identity, intIntTable),
-        input3.map(identity, intIntTable),
-        input4.map(identity, intIntTable)).groupByKey().combine(dummyCombiner).map(identity, null);
+    PCollection output2 = plume.flatten(tableOf(integers(), integers()),
+        input2.map(identity, tableOf(integers(), integers())),
+        input3.map(identity, tableOf(integers(), integers())),
+        input4.map(identity, tableOf(integers(), integers())))
+        .groupByKey()
+        .combine(dummyCombiner)
+        .map(identity, null);
     
-    PCollection output3 = plume.flatten(intIntTable,
-        input4.map(identity, intIntTable)).groupByKey().map(identity, null);
+    PCollection output3 = plume.flatten(tableOf(integers(), integers()),
+        input4.map(identity, tableOf(integers(), integers())))
+        .groupByKey()
+        .map(identity, null);
     
     Optimizer optimizer = new Optimizer();
     ExecutionStep step = optimizer.optimize(
@@ -83,15 +91,23 @@ public class TestOptimizer extends BaseTestClass {
     PCollection input3 = plume.fromJava(Lists.newArrayList(Pair.create(3, 3)));
     PCollection input4 = plume.fromJava(Lists.newArrayList(Pair.create(4, 4)));
 
-    PCollection partial1 = input1.map(identity, intIntTable);
+    PCollection partial1 = input1.map(identity, tableOf(integers(), integers()));
     PCollection partial2 =
-      plume.flatten(intIntTable,
-          input2.map(identity, intIntTable),
-          input3.map(identity, intIntTable).map(identity, null).map(identity, null));
+      plume.flatten(tableOf(integers(), integers()),
+          input2.map(identity, tableOf(integers(), integers())),
+          input3.map(identity, tableOf(integers(), integers()))
+          .map(identity, null)
+          .map(identity, null));
+    
     PCollection partial3 =
-      input4.map(identity, intIntTable).groupByKey().combine(dummyCombiner).map(identity, null);
+      input4.map(identity, tableOf(integers(), integers()))
+        .groupByKey()
+        .combine(dummyCombiner)
+        .map(identity, null);
   
-    PCollection output = plume.flatten(intIntTable, partial1, partial2, partial3).groupByKey().map(identity, null);
+    PCollection output = plume.flatten(tableOf(integers(), integers()), partial1, partial2, partial3)
+      .groupByKey()
+      .map(identity, null);
     
     Optimizer optimizer = new Optimizer();
     ExecutionStep step = optimizer.optimize(
@@ -114,15 +130,17 @@ public class TestOptimizer extends BaseTestClass {
      */
     List<Pair<Integer,Integer>> l1 = Lists.newArrayList(Pair.create(1,1),Pair.create(1,2),Pair.create(1,3));
     List<Pair<Integer,Integer>> l2 = Lists.newArrayList(Pair.create(2,10),Pair.create(2,20),Pair.create(3,30));
-    PTable<Integer,Integer> i1 = plume.fromJava(l1, intIntTable);
-    PTable<Integer,Integer> i2 = plume.fromJava(l2, intIntTable);
-    PTable<Integer,Integer> o = plume.flatten(intIntTable, i1, i2).groupByKey().map(new DoFn<Pair<Integer, Iterable<Integer>>, Pair<Integer, Integer>>() {
+    PTable<Integer,Integer> i1 = plume.fromJava(l1, tableOf(integers(), integers()));
+    PTable<Integer,Integer> i2 = plume.fromJava(l2, tableOf(integers(), integers()));
+    PTable<Integer,Integer> o = plume.flatten(tableOf(integers(), integers()), i1, i2)
+      .groupByKey()
+      .map(new DoFn<Pair<Integer, Iterable<Integer>>, Pair<Integer, Integer>>() {
       @Override
       public void process(Pair<Integer, Iterable<Integer>> v,
           EmitFn<Pair<Integer, Integer>> emitter) {
         emitter.emit(Pair.create(v.getKey(), v.getValue().iterator().next()));
       }
-    }, intIntTable);
+    }, tableOf(integers(), integers()));
     
     LocalExecutor executor = new LocalExecutor();
     Iterable<Pair<Integer,Integer>> result = executor.execute((LazyTable<Integer, Integer>)o);

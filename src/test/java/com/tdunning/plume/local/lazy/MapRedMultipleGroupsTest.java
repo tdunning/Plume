@@ -46,12 +46,12 @@ import com.tdunning.plume.Pair;
  * This test shows how three different group by's can be performed using Plume API which output three different
  * things and end up being executed in a single Map/Red job.
  */
-public class MapRedComplexTest {
+public class MapRedMultipleGroupsTest extends BaseTestClass {
 
   /**
    * The PlumeWorkflow class is extendend so that it can be instantiated via reflection at hadoop mappers/reducers
    */
-  public static class ComplexWorkflow extends PlumeWorkflow {
+  public static class MultipleGroupsWorkflow extends PlumeWorkflow {
 
     @SuppressWarnings("unchecked")
     @Override
@@ -71,69 +71,54 @@ public class MapRedComplexTest {
       
       final IntWritable one = new IntWritable(1);
       
-      // Define a reducer that counts all the grouped values
-      DoFn countReduce = 
-        new DoFn<Pair<WritableComparable, Iterable<IntWritable>>, Pair<WritableComparable, IntWritable>>() {
-        @Override
-        public void process(Pair<WritableComparable, Iterable<IntWritable>> v,
-            EmitFn<Pair<WritableComparable, IntWritable>> emitter) {
-          Iterator<IntWritable> it = v.getValue().iterator();
-          int count = 0;
-          while(it.hasNext()) {
-            count += it.next().get();
-          }
-          emitter.emit(Pair.create(v.getKey(), new IntWritable(count)));
-        }
-      };
-      
       // Define a map that counts and group by #chars of line
-      PCollection po1 = input.map(new DoFn<Text, Pair<IntWritable, IntWritable>>() {
+      PCollection po1 = input.map(new DoFn() {
         @Override
-        public void process(Text v, EmitFn<Pair<IntWritable, IntWritable>> emitter) {
+        public void process(Object v, EmitFn emitter) {
           StringTokenizer itr = new StringTokenizer(v.toString());
           int length = 0;
           while (itr.hasMoreTokens()) {
             length += itr.nextToken().length();
           }
-          emitter.emit( Pair.create(new IntWritable(length), one) );
+          emitter.emit(Pair.create(new IntWritable(length), one));
         }
       }, tableOf(integers(), integers()))
        .groupByKey()
-       .map(countReduce, tableOf(integers(), integers()));
+       .map(countReduceToText, tableOf(integers(), strings()));
       
       // Define a map that counts and group by #tokens of line
-      PCollection po2 = input.map(new DoFn<Text, Pair<IntWritable, IntWritable>>() {
+      PCollection po2 = input.map(new DoFn() {
         @Override
-        public void process(Text v, EmitFn<Pair<IntWritable, IntWritable>> emitter) {
+        public void process(Object v, EmitFn emitter) {
           StringTokenizer itr = new StringTokenizer(v.toString());
           int length = 0;
           while (itr.hasMoreTokens()) {
             length ++;
             itr.nextToken();
           }
-          emitter.emit( Pair.create(new IntWritable(length), one) );
+          emitter.emit(Pair.create(new IntWritable(length), one));
         }
       }, tableOf(integers(), integers()))
        .groupByKey()
-       .map(countReduce, tableOf(integers(), integers()));
+       .map(countReduceToText, tableOf(integers(), strings()));
       
       // Define a map that counts appearances of chars
-      PCollection po3 = input.map(new DoFn<Text, Pair<Text, IntWritable>>() {
+      PCollection po3 = input.map(new DoFn() {
         @Override
-        public void process(Text v, EmitFn<Pair<Text, IntWritable>> emitter) {
+        public void process(Object v, EmitFn emitter) {
           StringTokenizer itr = new StringTokenizer(v.toString());
           while (itr.hasMoreTokens()) {
             String token = itr.nextToken();
             for(int i = 0; i < token.length(); i++) {
-              emitter.emit( Pair.create(new Text(token.charAt(i)+""), one) );
+              emitter.emit(Pair.create(new Text(token.charAt(i)+""), one));
             }
           }
         }
       }, tableOf(strings(), integers()))
        .groupByKey()
-       .map(countReduce, tableOf(strings(), integers()));
+       .map(countReduceToText, tableOf(strings(), strings()));
       
-      // Add the output of the three grup by's to this workflow's outputs
+      // Add the output of the three group by's to this workflow's outputs
       addOutput(po1);
       addOutput(po2);
       addOutput(po3);
@@ -150,7 +135,7 @@ public class MapRedComplexTest {
     // Prepare output for test
     system.delete(new Path(outputPath), true);
     // Prepare workflow
-    ComplexWorkflow workFlow = new ComplexWorkflow();
+    MultipleGroupsWorkflow workFlow = new MultipleGroupsWorkflow();
     // Execute it
     MapRedExecutor executor = new MapRedExecutor();
     executor.execute(workFlow, outputPath);

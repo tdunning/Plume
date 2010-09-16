@@ -52,7 +52,7 @@ import static com.tdunning.plume.Plume.*;
 /**
  * This test asserts that {@link MapRedExecutor} behaves well under the famous WordCount test
  */
-public class MapRedWordCountTest {
+public class MapRedWordCountTest extends BaseTestClass {
 
   /**
    * The WordCount Workflow
@@ -88,31 +88,12 @@ public class MapRedWordCountTest {
           }
         }
       };
-      // Define the wordcount combiner
-      final CombinerFn wordCountCombiner = new CombinerFn<IntWritable>() {
-        @Override
-        public IntWritable combine(Iterable<IntWritable> stuff) {
-          int c = 0;
-          for(IntWritable i : stuff) {
-            c += i.get();
-          }
-          return new IntWritable(c);
-        }
-      };
-      // Define the wordcount reducer
-      DoFn wordCountReduce = new DoFn() {
-        @Override
-        public void process(Object v, EmitFn emitter) {
-          Pair p = (Pair)v;
-          emitter.emit(Pair.create(p.getKey(), new Text(""+wordCountCombiner.combine((Iterable<IntWritable>)p.getValue()))));
-        }
-      };
 
-      // Define the wordcount workflow
+      // Define the wordcount output
       PCollection output = input.map(wordCountMap, tableOf(strings(), integers()))
         .groupByKey()
-        .combine(wordCountCombiner)
-        .map(wordCountReduce, tableOf(strings(), strings()));
+        .combine(countCombiner)
+        .map(countReduceToText, tableOf(strings(), strings()));
       
       // Add wordcount's output as workflow's output
       addOutput(output);

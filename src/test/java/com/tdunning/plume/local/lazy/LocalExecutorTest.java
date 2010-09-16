@@ -17,6 +17,9 @@
 
 package com.tdunning.plume.local.lazy;
 
+import static com.tdunning.plume.Plume.integers;
+import static com.tdunning.plume.Plume.tableOf;
+
 import static org.junit.Assert.assertEquals;
 
 import java.util.Collections;
@@ -101,7 +104,7 @@ public class LocalExecutorTest extends BaseTestClass {
     LazyPlume plume = new LazyPlume();
     List<Integer> l1 = Lists.newArrayList(1, 2, 3);
     PTable<Integer, Iterable<Integer>> output = plume
-      .fromJava(l1).map(plusTwoPlusThree, intIntTable)
+      .fromJava(l1).map(plusTwoPlusThree, tableOf(integers(), integers()))
       .groupByKey();
     LazyTable<Integer, Iterable<Integer>> lOutput = (LazyTable<Integer, Iterable<Integer>>)output;
     // Get an executor
@@ -148,7 +151,7 @@ public class LocalExecutorTest extends BaseTestClass {
     LazyPlume plume = new LazyPlume();
     List<Integer> l1 = Lists.newArrayList(1, 2, 3);
     PTable<Integer, Integer> output = plume
-      .fromJava(l1).map(fn, intIntTable)
+      .fromJava(l1).map(fn, tableOf(integers(), integers()))
       .groupByKey()
       .combine(new CombinerFn<Integer>() {
         @Override

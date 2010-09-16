@@ -210,7 +210,7 @@ public class MapRedExecutor {
                 fS.mkdirs(materializedPath);
                 for(FileStatus file: files) {
                   if(file.getPath().getName().startsWith(entry.getValue()+"-r-")) {
-                    FileUtil.copy(fS, file.getPath(), fS, materializedPath, true, job.getConfiguration());
+                    FileUtil.copy(fS, file.getPath(), fS, materializedPath, false, job.getConfiguration());
                     oCol.setFile(materializedPath.toString());
                   }
                 }
