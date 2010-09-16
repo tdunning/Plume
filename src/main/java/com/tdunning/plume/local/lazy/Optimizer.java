@@ -86,9 +86,12 @@ public class Optimizer {
     // Build a map of output -> MSCR step
     Map<PCollection<?>, MSCR> outputMap = new HashMap<PCollection<?>, MSCR>();
     for(MSCR mscr: mscrs) {
+      int outputCounter = 1;
       for(Map.Entry<PCollection<?>, MSCR.OutputChannel<?,?,?>> entry: mscr.getOutputChannels().entrySet()) {
         MSCR.OutputChannel<?,?,?> oC = entry.getValue();
         outputMap.put(oC.output, mscr);
+//        ((LazyCollection)oC.output).setPlumeId(mscr.getId()+"_"+outputCounter);
+        outputCounter++;
       }
     }
     // Calculate dependencies between MSCRs

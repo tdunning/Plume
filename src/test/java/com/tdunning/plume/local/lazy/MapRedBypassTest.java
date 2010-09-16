@@ -94,7 +94,7 @@ public class MapRedBypassTest {
 
   @Test
   public void test() throws Exception {
-    String outputPath = "/tmp/output-bypasstest";
+    String outputPath = "/tmp/output-plume-bypasstest";
     String inputPath = "/tmp/input-wordcount.txt";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
@@ -107,7 +107,7 @@ public class MapRedBypassTest {
     MapRedExecutor executor = new MapRedExecutor();
     executor.execute(workFlow, outputPath);
     
-    List<String> str = Files.readLines(new File(outputPath+"/1/1-r-00000"), Charsets.UTF_8);
+    List<String> str = Files.readLines(new File(outputPath+"/1_1/1-r-00000"), Charsets.UTF_8);
     Map<String, String> m = Maps.newHashMap();
     for (String line: str) {
       m.put(line.split("\t")[0], line.split("\t")[1]); // not super-optimal, but less code
@@ -116,7 +116,7 @@ public class MapRedBypassTest {
     assertEquals(m.get("some simple text-blah"), "some simple text-bloh");
     assertEquals(m.get("is is-blah"), "is is-bloh");
     
-    str = Files.readLines(new File(outputPath+"/1/2-r-00000"), Charsets.UTF_8);
+    str = Files.readLines(new File(outputPath+"/1_2/2-r-00000"), Charsets.UTF_8);
     m = Maps.newHashMap();
     for (String line: str) {
       m.put(line.split("\t")[0], line.split("\t")[1]); // not super-optimal, but less code

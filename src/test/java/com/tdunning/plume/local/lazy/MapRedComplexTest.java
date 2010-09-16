@@ -143,7 +143,7 @@ public class MapRedComplexTest {
   @Test
   public void test() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
-    String outputPath = "/tmp/output-mscrtomapred-complex";
+    String outputPath = "/tmp/output-plume-complex";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
@@ -157,7 +157,7 @@ public class MapRedComplexTest {
     
     // Just assert that 3 output files were written and have content
     for(int i = 1; i <= 3; i++) {
-      File f = new File(outputPath+"/1/"+i+"-r-00000");
+      File f = new File(outputPath+"/1_" + i + "/" + i +"-r-00000");
       assertTrue(f.exists());
       assertTrue(f.length() > 100);
     }

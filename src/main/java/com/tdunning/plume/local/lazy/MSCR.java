@@ -121,7 +121,8 @@ public class MSCR {
   public <K, V, T> void addOutputChannel(OutputChannel<K, V, T> outputChannel) {
     nChannels++;
     // TODO explain this
-    PCollection<?> indexBy = outputChannel.output;
+    LazyCollection<?> indexBy = (LazyCollection<?>)outputChannel.output;
+    indexBy.setPlumeId(id+"_"+nChannels); // 
     if(outputChannel.shuffle != null) {
       indexBy = outputChannel.shuffle.getOrigin();
     }

@@ -76,7 +76,13 @@ public class OptimizerTools {
         DeferredOp op = current.getDeferredOp();
         if(op instanceof MultipleParallelDo) { // second condition for being an input
           MultipleParallelDo<?> mPDo = (MultipleParallelDo)current.getDeferredOp();
-          inputs.add(mPDo.getOrigin());
+          if(((LazyCollection<?>)mPDo.getOrigin()).isMaterialized()) {
+            inputs.add(mPDo.getOrigin()); // will be done in Mapper
+          } else if(op instanceof ParallelDo) {
+            inputs.add(current); // will be done in Reducer
+          } else {
+            inputs.add(mPDo.getOrigin()); // will be done in Mapper
+          }
           // Check for bypass channels
           for(Map.Entry entry: mPDo.getDests().entrySet()) {
             LazyCollection coll = (LazyCollection)entry.getKey();
@@ -158,6 +164,7 @@ public class OptimizerTools {
             }
             if(op instanceof ParallelDo) {
               oC.reducer = (ParallelDo)op;
+              // TODO what if it's multiple parallel do?
               oC.output = oC.reducer.getDest();
             }
           }

@@ -46,6 +46,16 @@ public class LazyCollection<T> implements PCollection<T> {
   DeferredOp deferredOp;
   
   List<DeferredOp> downOps;
+  
+  String plumeId = "";
+
+  public String getPlumeId() {
+    return plumeId;
+  }
+
+  public void setPlumeId(String plumeId) {
+    this.plumeId = plumeId;
+  }
 
   /**
    * Build a PCollection with materialized state

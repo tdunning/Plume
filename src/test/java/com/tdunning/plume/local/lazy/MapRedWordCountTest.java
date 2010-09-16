@@ -129,7 +129,7 @@ public class MapRedWordCountTest {
   @Test
   public void testWordCount() throws IOException, InterruptedException, ClassNotFoundException {
     String inputPath = "/tmp/input-wordcount.txt";
-    String outputPath = "/tmp/output-mscrtomapred-wordcount";
+    String outputPath = "/tmp/output-plume-wordcount";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     system.copyFromLocalFile(new Path(Resources.getResource("simple-text.txt").getPath()), new Path(inputPath));
@@ -141,7 +141,7 @@ public class MapRedWordCountTest {
     MapRedExecutor executor = new MapRedExecutor();
     executor.execute(workFlow, outputPath);
     
-    List<String> str = Files.readLines(new File(outputPath+"/1/1-r-00000"), Charsets.UTF_8);
+    List<String> str = Files.readLines(new File(outputPath+"/1_1/1-r-00000"), Charsets.UTF_8);
     
     Map<String, String> m = Maps.newHashMap();
     for (String line: str) {

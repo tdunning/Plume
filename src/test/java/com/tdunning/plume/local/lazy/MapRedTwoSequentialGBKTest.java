@@ -52,33 +52,25 @@ public class MapRedTwoSequentialGBKTest {
           Text t = (Text)v;
           // do some foo processing
           emitter.emit(Pair.create(t, new Text("foo")));
-        }}, tableOf(strings(), strings())).groupByKey()
-        // just bring back the line (key) - doesn't do any calculation
-        .map(new DoFn() {
+        }}, tableOf(strings(), strings()))
+         .groupByKey()
+         .map(new DoFn() { 
         public void process(Object v, EmitFn emitter) {
           Pair p = (Pair)v;
-          emitter.emit(p.getKey());
-        }
-      }, collectionOf(strings())).map(new DoFn() { // note that the optimizer should join these two sequential map() together
-        public void process(Object v, EmitFn emitter) {
-          Text t = (Text)v;
           // do some more foo processing         
-          emitter.emit(Pair.create(t, new Text("bar")));
+          emitter.emit(Pair.create(p.getKey(), new Text("bar")));
         }
       }, tableOf(strings(), strings()))
         // second group by key
-        .groupByKey();
+         .groupByKey();
       
       addOutput(output);
     }
   }
 
   @Test
- 
-  @Ignore // This is work-in-progress (right now doesn't work)
-  
   public void test() throws Exception {
-    String outputPath = "/tmp/output-twosequentialgbktest";
+    String outputPath = "/tmp/output-plume-twosequentialgbktest";
     String inputPath = "/tmp/input-wordcount.txt";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());

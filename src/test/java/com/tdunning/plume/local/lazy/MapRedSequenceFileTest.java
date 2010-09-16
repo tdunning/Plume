@@ -97,7 +97,7 @@ public class MapRedSequenceFileTest {
     writer.append(new IntWritable(1), new IntWritable(2));
     writer.append(new IntWritable(3), new IntWritable(4));
     writer.close();
-    String outputPath = "/tmp/output-simpletest";
+    String outputPath = "/tmp/output-plume-simpletest";
     // Prepare input for test
     FileSystem system = FileSystem.getLocal(new Configuration());
     // Prepare output for test
@@ -110,7 +110,7 @@ public class MapRedSequenceFileTest {
     /*
      * Read output which is SequenceFile<int,int> and assert that it has data 2,3\n4,5
      */
-    p = new Path(outputPath + "/1/1-r-00000");
+    p = new Path(outputPath + "/1_1/1-r-00000");
     SequenceFile.Reader reader = new SequenceFile.Reader(localFS, p, conf);
     IntWritable key = new IntWritable(1);
     IntWritable value = new IntWritable(1);

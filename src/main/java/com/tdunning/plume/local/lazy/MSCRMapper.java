@@ -24,6 +24,7 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputSplitWrapper;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.mortbay.log.Log;
 
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
@@ -43,11 +44,13 @@ import com.tdunning.plume.types.PTableType;
 public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>  {
   
   MSCR mscr; // Current MSCR being executed
+  String tmpFolder;
   
   protected void setup(Mapper<WritableComparable, WritableComparable, PlumeObject, PlumeObject>.Context context) 
     throws IOException, InterruptedException {
   
     this.mscr = MapRedExecutor.readMSCR(context.getConfiguration());
+    this.tmpFolder = context.getConfiguration().get(MapRedExecutor.TEMP_OUTPUT_PATH);
   };
 
   @SuppressWarnings("unchecked")
@@ -63,13 +66,17 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
     for(PCollection<?> input: mscr.getInputs()) {
       LazyCollection<?> thisL = (LazyCollection<?>)input;
       if(thisL.getFile() == null) {
-        throw new RuntimeException("Input PCollection with no materialized file");
+        thisL.setFile(tmpFolder + "/" + thisL.getPlumeId()); // Convention for intermediate results
       }
-      if(thisL.getFile().equals(fS.getPath().toString()) ||
-          ("file:" + thisL.getFile()).equals(fS.getPath().toString())) {
+      if(fS.getPath().toString().startsWith(thisL.getFile()) ||
+         fS.getPath().toString().startsWith("file:" + thisL.getFile())) {
         l = thisL;
         break;
       }
+    }
+    
+    if(l == null) {
+      throw new RuntimeException("Unable to match input split with any MSCR input");
     }
     
     // If this collection is a table -> process Pair, otherwise process value
@@ -121,11 +128,10 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
       }
     } else if(op instanceof Flatten) {
       LazyCollection col = (LazyCollection)((Flatten)op).getDest();
-      GroupByKey gBK = (GroupByKey)col.getDownOps().get(0); 
-      int channel = mscr.getNumberedChannels().get(gBK);
+      int channel = mscr.getNumberedChannels().get(col);
       context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
     } else if(op instanceof GroupByKey) {
-      int channel = mscr.getNumberedChannels().get((GroupByKey)op);
+      int channel = mscr.getNumberedChannels().get(l);
       context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
     } 
   };  

@@ -28,6 +28,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.BytesWritable;
@@ -72,7 +75,8 @@ public class MapRedExecutor {
 
   final static String WORKFLOW_NAME = "plume.workflow.name"; // hadoop conf. property used to instantiate proper workflow
   final static String MSCR_ID = "plume.workflow.mscr.id"; // Identifies current MSCR being executed
-
+  final static String TEMP_OUTPUT_PATH = "plume.tmp.path";
+  
   String tmpOutputFolder;
   ExecutorService executor = Executors.newCachedThreadPool();
   
@@ -182,11 +186,13 @@ public class MapRedExecutor {
       final AtomicBoolean abort  = new AtomicBoolean(false);
       // For each MSCR that can be executed concurrently...
       for(final MSCR mscr: step.mscrSteps) {
-        final String jobId =  workFlowId + "/" + mscr.getId(); 
-        final String outputPath = tmpOutputFolder + "/" + jobId;
-        log.info("Triggering execution of jobId " + jobId + ". Its output will be saved to " + outputPath);
+        final String workFlowOutputPath = tmpOutputFolder + "/" + workFlowId;
+        final String jobId = workFlowId + "/" + mscr.getId();
+        final String jobOutputPath = tmpOutputFolder + "/" + jobId;
+        log.info("Triggering execution of jobId " + jobId + ". Its output will be saved to " + jobOutputPath);
         // ... Get its MapRed Job
-        final Job job = getMapRed(mscr, workFlow, outputPath);
+        final Job job = getMapRed(mscr, workFlow, workFlowOutputPath, jobOutputPath);
+        final FileSystem fS = FileSystem.getLocal(job.getConfiguration());
         // ... Submit it to the ThreadPool
         executor.submit(new Runnable() {
           @Override
@@ -197,8 +203,18 @@ public class MapRedExecutor {
               log.info("jobId " + jobId + " completed successfully, now materializing outputs.");
               for(Map.Entry<PCollection<?>, Integer> entry: mscr.getNumberedChannels().entrySet()) {
                 LazyCollection<?> oCol = (LazyCollection<?>)mscr.getOutputChannels().get(entry.getKey()).output;
-                oCol.materialized = true;
-                oCol.setFile(outputPath + "/" + entry.getValue() + "-r-*"); // wildcard to this cannel's output
+                // Move this output to somewhere recognizable - this executor's tmp folder + this PCollection's Plume Id
+                // This way, mappers that read unmaterialized collections will know where to find intermediate states.
+                FileStatus[] files = fS.listStatus(new Path(jobOutputPath));
+                Path materializedPath = new Path(workFlowOutputPath + "/" + oCol.getPlumeId());
+                fS.mkdirs(materializedPath);
+                for(FileStatus file: files) {
+                  if(file.getPath().getName().startsWith(entry.getValue()+"-r-")) {
+                    FileUtil.copy(fS, file.getPath(), fS, materializedPath, true, job.getConfiguration());
+                    oCol.setFile(materializedPath.toString());
+                  }
+                }
+                log.info("Materialized plume output " + oCol.getPlumeId() + " to " + oCol.getFile());
               }
             } catch (IOException e) {
               log.warn("One Job failed: " + jobId + ", current Workflow will be aborted ", e);
@@ -237,12 +253,13 @@ public class MapRedExecutor {
    * 
    * @throws IOException
    */
-  static Job getMapRed(final MSCR mscr, PlumeWorkflow workFlow, String outputPath) 
+  static Job getMapRed(final MSCR mscr, PlumeWorkflow workFlow, String workFlowOutputPath, String outputPath) 
     throws IOException {
     
     Configuration conf = new Configuration();
     conf.set(WORKFLOW_NAME, workFlow.getClass().getName());
     conf.setInt(MSCR_ID, mscr.getId());
+    conf.set(TEMP_OUTPUT_PATH, workFlowOutputPath);
 
     Job job = new Job(conf, "MSCR"); // TODO deprecation
 
@@ -260,7 +277,10 @@ public class MapRedExecutor {
       }
       LazyCollection<Text> l = (LazyCollection<Text>)input;
       if(!(l.isMaterialized() && l.getFile() != null)) {
-        throw new IllegalArgumentException("Can't create MapRed from MSCR inputs that are not materialized to a file");
+        // Collections have plume ID only if they are intermediate results - TODO better naming for this
+        if(l.getPlumeId().length() < 1) {
+          throw new IllegalArgumentException("Can't create MapRed from MSCR inputs that are not materialized to a file");
+        }
       }
       PCollectionType<?> rType = l.getType();
       Class<? extends InputFormat> format =  SequenceFileInputFormat.class;
