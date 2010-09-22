@@ -144,7 +144,7 @@ public class MapRedMultipleGroupsTest extends BaseTestClass {
     for(int i = 1; i <= 3; i++) {
       File f = new File(outputPath+"/1_" + i + "/" + i +"-r-00000");
       assertTrue(f.exists());
-      assertTrue(f.length() > 100);
+      assertTrue(f.length() > 64);
     }
   }
 }

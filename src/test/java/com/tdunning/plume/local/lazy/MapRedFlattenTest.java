@@ -58,7 +58,7 @@ public class MapRedFlattenTest extends BaseTestClass {
         inputEvent2.map(new DoFn<Text, Text>() {
           @Override
           public void process(Text v, EmitFn emitter) {
-            emitter.emit(new Text(SimpleDateFormat.getInstance().format(new Date())+"\t"+"new_event"+"\t"+v.toString()));
+            emitter.emit(new Text(new SimpleDateFormat("yyyy/MM/dd").format(new Date())+"\t"+"new_event"+"\t"+v.toString()));
           }
         }, collectionOf(strings())));
         
@@ -101,13 +101,7 @@ public class MapRedFlattenTest extends BaseTestClass {
           emitter.emit(Pair.create(new Text(splittedLine[2]), new Text("")));
         }
       }, tableOf(strings(), strings()))
-      .groupByKey()
-      .map(new DoFn() {
-        @Override
-        public void process(Object v, EmitFn emitter) {
-          emitter.emit(((Pair)v).getKey());
-        }
-      }, collectionOf(strings()));
+      .groupByKey();
       
       addOutput(dateUserClicks);
       addOutput(dateClicks);
@@ -116,7 +110,6 @@ public class MapRedFlattenTest extends BaseTestClass {
   }
   
   @Test
-  @Ignore // Work in progress (not working right now)
   public void test() throws Exception {
     String outputPath = "/tmp/output-plume-flattentest";
     // Prepare input for test

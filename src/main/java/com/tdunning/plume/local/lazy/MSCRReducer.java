@@ -29,10 +29,10 @@ import com.google.common.collect.Lists;
 import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
+import com.tdunning.plume.PTable;
 import com.tdunning.plume.Pair;
 import com.tdunning.plume.local.lazy.MSCR.OutputChannel;
 import com.tdunning.plume.local.lazy.MapRedExecutor.PlumeObject;
-import com.tdunning.plume.local.lazy.op.GroupByKey;
 import com.tdunning.plume.local.lazy.op.ParallelDo;
 
 /**
@@ -89,7 +89,11 @@ public class MSCRReducer extends Reducer<PlumeObject, PlumeObject, NullWritable,
     } else {
       // direct writing - write all key, value pairs
       for(PlumeObject val: values) {
-        mos.write(arg0.sourceId+"", arg0.obj, val.obj);
+        if(oC.output instanceof PTable) {
+          mos.write(arg0.sourceId+"", arg0.obj, val.obj);
+        } else {
+          mos.write(arg0.sourceId+"", NullWritable.get(), val.obj);
+        }
       }
     }
   }

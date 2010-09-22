@@ -34,6 +34,7 @@ import com.tdunning.plume.DoFn;
 import com.tdunning.plume.EmitFn;
 import com.tdunning.plume.PCollection;
 import com.tdunning.plume.Pair;
+import com.tdunning.plume.local.lazy.op.DeferredOp;
 import com.tdunning.plume.local.lazy.op.GroupByKey;
 
 public class TestOptimizerTools extends BaseTestClass {
@@ -59,7 +60,7 @@ public class TestOptimizerTools extends BaseTestClass {
         emitter.emit(1);
       }
     }, null);
-    List<GroupByKey<?, ?>> groupBys = OptimizerTools.getAllGroupByKeys(output);
+    List<DeferredOp> groupBys = OptimizerTools.getAll(output, GroupByKey.class);
     assertEquals(groupBys.size(), 2);
   }
   
@@ -75,13 +76,13 @@ public class TestOptimizerTools extends BaseTestClass {
     // One inner group by key
     PCollection<?> output =
       plume.flatten(
+          tableOf(integers(), integers()),
           input1.map(plusTwoPlusThree, tableOf(integers(), integers())),
           input2.map(plusTwoPlusThree, tableOf(integers(), integers())),
           input3.map(plusTwoPlusThree, tableOf(integers(), integers()))
           .groupByKey()
           .combine(dummyCombiner)
         )
-        .map(identity, tableOf(integers(), integers()))
         .groupByKey();
     
     List<PCollection> outputs = new ArrayList<PCollection>();
@@ -93,7 +94,7 @@ public class TestOptimizerTools extends BaseTestClass {
       MSCR mscr = iterator.next();
       if(mscr.hasInput(input1)) {
         assertTrue(mscr.hasInput(input2));
-        assertEquals(mscr.getInputs().size(), 2);
+        assertEquals(mscr.getInputs().size(), 3);
       } else if(mscr.hasInput(input3)) { 
         assertEquals(mscr.getInputs().size(), 1);
       } 

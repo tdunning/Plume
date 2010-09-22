@@ -1,0 +1,5 @@
+2010/09/09	event_1	pere
+2010/09/09	event_1	david
+2010/09/10	event_2	david
+2010/09/11	event_2	pere
+2010/09/12	event_1	frasier

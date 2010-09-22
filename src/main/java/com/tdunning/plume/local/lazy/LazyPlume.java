@@ -86,7 +86,7 @@ public class LazyPlume extends Plume {
 
   @Override
   public <T> PCollection<T> flatten(PCollection<T>... args) {
-    return flatten(null, args);
+    return flatten(((LazyCollection<T>)args[0]).type, args);
   }
 
   @Override

@@ -76,7 +76,7 @@ public class MSCR {
       this.shuffle = shuffle;
     }
     
-    // By-pass channel
+    // By-pass / Single flatten channel
     public OutputChannel(PCollection<?> output) {
       this.output = output;
     }
@@ -137,5 +137,10 @@ public class MSCR {
   
   public Map<Integer, PCollection<?>> getChannelByNumber() {
     return channelByNumber;
+  }
+  
+  @Override
+  public String toString() {
+    return id+" #inputs "+inputs.size()+" #outputs "+outputChannels.size();
   }
 }

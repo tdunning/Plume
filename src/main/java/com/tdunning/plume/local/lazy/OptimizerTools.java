@@ -19,6 +19,7 @@ package com.tdunning.plume.local.lazy;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,22 +45,17 @@ public class OptimizerTools {
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
   static Set<MSCR> getMSCRBlocks(List<PCollection> outputs) {
-    List<GroupByKey<?, ?>> groupBys = new ArrayList<GroupByKey<?, ?>>();
-    for(PCollection<?> output: outputs) {
-      List<GroupByKey<?, ?>> partialGroupBys = OptimizerTools.getAllGroupByKeys(output);
-      for(GroupByKey<?, ?> gBK: partialGroupBys) {
-        if(!groupBys.contains(gBK)) {
-          groupBys.add(gBK);
-        }
-      }
-    }
+    // Get all GroupByKeys from the tree
+    List<DeferredOp> groupBys = OptimizerTools.getAll(outputs, GroupByKey.class);
     int mscrId = 1;
     Set<MSCR> mscrs = new HashSet<MSCR>();
     // For all found GroupByKey blocks
-    for(GroupByKey<?, ?> groupBy: groupBys) {
+    for(DeferredOp gBK: groupBys) {
+      GroupByKey groupBy = (GroupByKey<?,?>)gBK;
       // Gather all information needed for MSCR from this GBK
       Set<PCollection<?>> inputs = new HashSet<PCollection<?>>();
       Set<GroupByKey<?, ?>> outputChannels = new HashSet<GroupByKey<?, ?>>();
+      Set<Flatten<?>> unGroupedOutputChannels = new HashSet<Flatten<?>>();
       Set<PCollection<?>> bypassChannels = new HashSet<PCollection<?>>();
       Stack<LazyCollection<?>> toVisit = new Stack<LazyCollection<?>>();
       Set<LazyCollection<?>> visited = new HashSet<LazyCollection<?>>();
@@ -83,11 +79,29 @@ public class OptimizerTools {
           } else {
             inputs.add(mPDo.getOrigin()); // will be done in Mapper
           }
-          // Check for bypass channels
+          // Check for bypass channels & output channels with no group-by
           for(Map.Entry entry: mPDo.getDests().entrySet()) {
             LazyCollection coll = (LazyCollection)entry.getKey();
             if(coll.getDownOps() == null || coll.getDownOps().size() == 0) {
+              bypassChannels.add(coll); // leaf node
+            } else if(coll.getDownOps().get(0) instanceof MultipleParallelDo) {
               bypassChannels.add(coll);
+            /*
+             * Case of an output channel that Flattens with no Group By
+             */
+            } else if(coll.getDownOps().get(0) instanceof Flatten) {
+              Flatten<?> thisFlatten = (Flatten<?>)coll.getDownOps().get(0);
+              LazyCollection ldest = (LazyCollection)thisFlatten.getDest();
+              if(ldest.getDownOps() == null || ldest.getDownOps().size() == 0 ||
+                  ldest.getDownOps().get(0) instanceof MultipleParallelDo) {
+                unGroupedOutputChannels.add(thisFlatten);
+                // Add the rest of this flatten's origins to the stack in order to possibly discover more output channels
+                for(PCollection<?> col: thisFlatten.getOrigins()) {
+                  if(!visited.contains(col)) {
+                    toVisit.push((LazyCollection<?>)col);
+                  }
+                }
+              }
             }
           }
           continue;
@@ -134,11 +148,21 @@ public class OptimizerTools {
           mscrToAdd.addInput(input);
         }
       }
-      // Add all missing ungroupped outputs to current MSCR
+      // Add all missing bypass outputs to current MSCR
       for(PCollection<?> col: bypassChannels) {
         if(!mscrToAdd.hasOutputChannel(col)) {
           // Create new by-pass channel
           MSCR.OutputChannel oC = new MSCR.OutputChannel(col);
+          mscrToAdd.addOutputChannel(oC);
+        }
+      }
+      // Add all missing flatten-with-no-groupby outputs to current MSCR
+      for(Flatten flatten: unGroupedOutputChannels) {
+        if(!mscrToAdd.hasOutputChannel(flatten.getDest())) {
+          // Create new channel with flatten and nothing else
+          MSCR.OutputChannel oC = new MSCR.OutputChannel(flatten.getDest());
+          oC.output = flatten.getDest();
+          oC.flatten = flatten;
           mscrToAdd.addOutputChannel(oC);
         }
       }
@@ -164,7 +188,6 @@ public class OptimizerTools {
             }
             if(op instanceof ParallelDo) {
               oC.reducer = (ParallelDo)op;
-              // TODO what if it's multiple parallel do?
               oC.output = oC.reducer.getDest();
             }
           }
@@ -173,20 +196,92 @@ public class OptimizerTools {
       }
       mscrs.add(mscrToAdd); // Add if needed
     }
+    return addRemainingTrivialMSCRs(outputs, mscrId, mscrs);
+  }
+  
+  /**
+   * This utility returns all the MSCRs that are not related to a GroupByKey - 
+   *  the remaining trivial cases as described in FlumeJava paper
+   *  
+   *  These cases will be either:
+   *  - Flattens that are followed by either a)MultipleParallelDo or b)nothing
+   *  
+   *    (These ones can have correlated inputs and be parallelized just like the ones with GroupByKey)
+   *    
+   *  - The trivial Input->ParalleDo|MultipleParalleDo->Output case
+   *  
+   * @param outputs
+   * @return
+   */
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  static Set<MSCR> addRemainingTrivialMSCRs(List<PCollection> outputs, int currentMscrId, Set<MSCR> currentMSCRs) {
+    // Get all Flatten from the tree
+    List<DeferredOp> flattens = OptimizerTools.getAll(outputs, Flatten.class);
+    Set<MSCR> mscrs = new HashSet<MSCR>();
+    mscrs.addAll(currentMSCRs);
+    Iterator<DeferredOp> it = flattens.iterator();
+    mainLoop: while(it.hasNext()) {
+      Flatten<?> flatten = (Flatten<?>)it.next();
+      // Process only remaining flattens that are not in any other MSCR
+      for(MSCR mscr: mscrs) {
+        for(Map.Entry<PCollection<?>, MSCR.OutputChannel<?, ?, ?>> entry: mscr.getOutputChannels().entrySet()) {
+          if(entry.getValue().flatten != null && entry.getValue().flatten == flatten) {
+            continue mainLoop; // skip this flatten
+          }
+        }
+      }
+      //
+      MSCR mscr = new MSCR(currentMscrId);
+      currentMscrId++;
+      // add output channel
+      MSCR.OutputChannel oC = new MSCR.OutputChannel(flatten.getDest());
+      oC.output = flatten.getDest();
+      oC.flatten = flatten;
+      mscr.addOutputChannel(oC);
+      // add inputs
+      for(PCollection coll: flatten.getOrigins()) {
+        LazyCollection lCol = (LazyCollection)coll;
+        if(lCol.isMaterialized()) {
+          mscr.addInput(coll);
+        } else if(lCol.deferredOp instanceof ParallelDo) {
+          ParallelDo pDo = (ParallelDo)lCol.deferredOp;
+          if(((LazyCollection)pDo.getOrigin()).isMaterialized()) {
+            mscr.addInput(pDo.getOrigin());
+          } else if(pDo instanceof MultipleParallelDo) {
+            mscr.addInput(pDo.getOrigin());
+          } else {
+            mscr.addInput(coll);
+          }
+        } else {
+          mscr.addInput(coll);
+        }
+      }
+      mscrs.add(mscr);
+    }
     return mscrs;
   }
   
   /**
-   * This utility navigates through all the tree and return the set of GroupByKey nodes found
+   * This utility navigates through all the tree and return the set of DeferredOp nodes found given the provided Class
    */
-  static List<GroupByKey<?, ?>> getAllGroupByKeys(PCollection<?> output) {
-    List<GroupByKey<?, ?>> groupByKeys = new ArrayList<GroupByKey<?, ?>>();
+  static List<DeferredOp> getAll(List<PCollection> outputs, Class<? extends DeferredOp> getClass) {
+    List<DeferredOp> ops = new ArrayList<DeferredOp>();
+    for(PCollection<?> output: outputs) {
+      List<DeferredOp> partialGroupBys = getAll(output, getClass);
+      for(DeferredOp op: partialGroupBys) {
+        if(!ops.contains(op)) {
+          ops.add(op);
+        }
+      }
+    }
+    return ops;
+  }
+
+  static List<DeferredOp> getAll(PCollection<?> output, Class<? extends DeferredOp> getClass) {
+    List<DeferredOp> retOps = new ArrayList<DeferredOp>();
     Stack<LazyCollection<?>> toVisit = new Stack<LazyCollection<?>>();
     Set<LazyCollection<?>> visited = new HashSet<LazyCollection<?>>();
     toVisit.push((LazyCollection<?>)output);
-    /*
-     * 1- Gather GroupByKey info
-     */
     while(!toVisit.isEmpty()) {
       LazyCollection<?> current = toVisit.pop();
       visited.add(current);
@@ -194,11 +289,10 @@ public class OptimizerTools {
         continue;
       }
       DeferredOp op = current.getDeferredOp();
-      if(op instanceof GroupByKey) {
-        // Found GroupByKey
-        GroupByKey<?, ?> gBK = (GroupByKey<?, ?>)op;
-        if(!groupByKeys.contains(gBK)) {
-          groupByKeys.add(gBK);
+      if(op.getClass().equals(getClass)) {
+        // Found 
+        if(!retOps.contains(op)) {
+          retOps.add(op);
         }
       } 
       // Add more nodes to visit
@@ -230,6 +324,6 @@ public class OptimizerTools {
         }
       }
     }
-    return groupByKeys;
+    return retOps;
   }
 }

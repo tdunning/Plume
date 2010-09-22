@@ -98,9 +98,7 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
         }
         final Integer channel;
         if(childOp != null && childOp instanceof Flatten) {
-          LazyCollection col = (LazyCollection)((Flatten)childOp).getDest();
-          GroupByKey gBK = (GroupByKey)col.getDownOps().get(0); 
-          channel = mscr.getNumberedChannels().get(gBK.getOrigin());
+          channel = mscr.getNumberedChannels().get(((Flatten)childOp).getDest());
         } else if(childOp != null && childOp instanceof GroupByKey) {
           channel = mscr.getNumberedChannels().get(((GroupByKey)childOp).getOrigin());
         } else {
@@ -114,12 +112,19 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
         en.getValue().process(toProcess, new EmitFn() {
           @Override
           public void emit(Object v) {
-            Pair p = (Pair)v; // TODO how to report this. Same with WritableComparable type safety.
             try {
-              context.write(
-                new PlumeObject((WritableComparable)p.getKey(), channel),
-                new PlumeObject((WritableComparable)p.getValue(), channel)
-              );
+              if(v instanceof Pair) {
+                Pair p = (Pair)v;
+                context.write(
+                  new PlumeObject((WritableComparable)p.getKey(), channel),
+                  new PlumeObject((WritableComparable)p.getValue(), channel)
+                );
+              } else {
+                context.write(
+                  new PlumeObject((WritableComparable)v, channel),
+                  new PlumeObject((WritableComparable)v, channel)
+                );              
+              }
             } catch (Exception e) {
               e.printStackTrace(); // TODO How to report this
             }
