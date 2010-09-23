@@ -46,4 +46,9 @@ public class MultipleParallelDo<T> extends DeferredOp {
   public Map<PCollection<?>, DoFn<T, ?>> getDests() {
     return dests;
   }
+  
+  @Override
+  public String toString() {
+    return "MultipleParallelDo, origin " + origin + " Dests " + dests;
+  }
 }

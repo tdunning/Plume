@@ -37,4 +37,9 @@ public class Flatten<T> extends DeferredOp {
   public PCollection<T> getDest() {
     return dest;
   }
+  
+  @Override
+  public String toString() {
+    return "Origins " + origins + " Destination " + dest;
+  }
 }

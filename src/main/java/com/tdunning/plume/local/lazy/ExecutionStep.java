@@ -36,4 +36,9 @@ public class ExecutionStep {
   public ExecutionStep getNextStep() {
     return nextStep;
   }
+  
+  @Override
+  public String toString() {
+    return mscrSteps+(nextStep != null ? " \n"+nextStep : "");
+  }
 }

@@ -127,13 +127,14 @@ public class MapRedExecutor {
     @Override
     public int compareTo(PlumeObject arg0) {
       if(arg0.sourceId != sourceId) {
-        return -1;
+        return arg0.sourceId > sourceId ? 1 : -1;
       }
-      if(arg0.obj.getClass().equals(obj.getClass())) {
-        return obj.compareTo(arg0.obj);
-      } else {
-        return -1;
-      }
+      return obj.compareTo(arg0.obj);
+    }
+    
+    @Override
+    public String toString() {
+      return obj+" #channel "+sourceId;
     }
   }
     
@@ -324,6 +325,8 @@ public class MapRedExecutor {
      */
     job.setCombinerClass(MSCRCombiner.class);
     job.setReducerClass(MSCRReducer.class);
+    
+    job.setNumReduceTasks(1);
     return job;
   }
   

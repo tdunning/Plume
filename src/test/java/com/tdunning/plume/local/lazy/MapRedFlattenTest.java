@@ -90,7 +90,7 @@ public class MapRedFlattenTest extends BaseTestClass {
         .groupByKey()
         .combine(countCombiner)
         .map(countReduceToText, tableOf(strings(), strings()));
-      
+  
       /**
        * We use the aggregate log to calculate a list of uniq users
        */
@@ -101,7 +101,13 @@ public class MapRedFlattenTest extends BaseTestClass {
           emitter.emit(Pair.create(new Text(splittedLine[2]), new Text("")));
         }
       }, tableOf(strings(), strings()))
-      .groupByKey();
+      .groupByKey()
+      .map(new DoFn<Pair, Text>() { // Reduce - just emit the key
+        @Override
+        public void process(Pair v, EmitFn<Text> emitter) {
+          emitter.emit((Text)v.getKey());
+        }
+      }, collectionOf(strings()));
       
       addOutput(dateUserClicks);
       addOutput(dateClicks);

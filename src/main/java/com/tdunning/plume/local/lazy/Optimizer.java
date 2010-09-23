@@ -216,7 +216,8 @@ public class Optimizer {
       LazyCollection<?> newInput = new LazyCollection();
       newInput.deferredOp = new ParallelDo(op.getFunction(), fInput, newInput);
       newInput.type = ((LazyCollection)flatten.getDest()).getType();
-      fInput.addDownOp(newInput.deferredOp); // unnecessary intermediate collections will remain linked but Optimizer will remove them in another step
+      fInput.downOps.remove(0);
+      fInput.addDownOp(newInput.deferredOp);
       newOrigins.add(newInput);
     }
     Flatten<?> newFlatten = new Flatten(newOrigins, op.getDest());
@@ -352,10 +353,11 @@ public class Optimizer {
       }
     };
     LazyCollection orig2 = (LazyCollection)p2.getOrigin();
-    ParallelDo newPDo = new ParallelDo(newFn, orig2, orig1);
+    ParallelDo newPDo = new ParallelDo(newFn, orig2, output);
     // Clean & change pointers
-    orig2.addDownOp(newPDo);
+    orig2.downOps.remove(p2);
     orig1.downOps.remove(p1);
+    orig2.addDownOp(newPDo);
     output.deferredOp = newPDo;
     // Recursively apply this function to the same node => TODO Beware infinite recursion, properly test
     fuseParallelDos(output);

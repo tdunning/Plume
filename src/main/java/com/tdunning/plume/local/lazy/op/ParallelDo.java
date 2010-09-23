@@ -39,4 +39,9 @@ public class ParallelDo<T, V> extends MultipleParallelDo<T> {
   public PCollection<V> getDest() {
     return dest;
   }
+
+  @Override
+  public String toString() {
+    return "ParallelDo " + function + " to " + origin + " result " + dest;
+  }
 }

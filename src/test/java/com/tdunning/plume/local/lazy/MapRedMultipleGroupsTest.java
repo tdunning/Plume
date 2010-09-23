@@ -141,6 +141,9 @@ public class MapRedMultipleGroupsTest extends BaseTestClass {
     executor.execute(workFlow, outputPath);
     
     // Just assert that 3 output files were written and have content
+    /**
+     * TODO This test has to check the actual results of the 3 outputs
+     */
     for(int i = 1; i <= 3; i++) {
       File f = new File(outputPath+"/1_" + i + "/" + i +"-r-00000");
       assertTrue(f.exists());

@@ -156,4 +156,11 @@ public class LazyCollection<T> implements PCollection<T> {
   public void setFile(String file) {
     this.file = file;
   }
+  
+  @Override
+  public String toString() {
+    String n = super.toString();
+    n = n.substring(n.indexOf("@") + 1, n.length());
+    return (getPlumeId() != "" ? getPlumeId() : n);
+  }
 }

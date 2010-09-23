@@ -23,4 +23,10 @@ package com.tdunning.plume;
  */
 public abstract class DoFn<In, Out> {
   public abstract void process(In v, EmitFn<Out> emitter);
+  
+  @Override
+  public String toString() {
+    String f = super.toString();
+    return "DoFn " + f.substring(f.indexOf("@") + 1, f.length());
+  }
 }

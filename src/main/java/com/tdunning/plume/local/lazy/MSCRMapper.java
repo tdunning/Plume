@@ -20,6 +20,7 @@ package com.tdunning.plume.local.lazy;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputSplitWrapper;
@@ -131,13 +132,16 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
           }
         });
       }
-    } else if(op instanceof Flatten) {
-      LazyCollection col = (LazyCollection)((Flatten)op).getDest();
-      int channel = mscr.getNumberedChannels().get(col);
-      context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
-    } else if(op instanceof GroupByKey) {
+    } else {
+      if(op instanceof Flatten) {
+        l = (LazyCollection)((Flatten)op).getDest();
+      }
       int channel = mscr.getNumberedChannels().get(l);
-      context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
-    } 
+      if(toProcess instanceof Pair) {
+        context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
+      } else {
+        context.write(new PlumeObject(value, channel), new PlumeObject(value, channel));
+      }
+    }
   };  
 }

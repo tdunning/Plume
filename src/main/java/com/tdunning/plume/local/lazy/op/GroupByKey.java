@@ -37,4 +37,9 @@ public class GroupByKey<K, V> extends OneToOneOp<Pair<K, V>, Pair<K, Iterable<V>
   public LazyTable<K, V> getOrigin() {
     return origin;
   }
+  
+  @Override
+  public String toString() {
+    return "Group " + origin + " to " + dest;
+  }
 }

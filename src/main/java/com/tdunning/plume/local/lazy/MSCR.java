@@ -96,6 +96,11 @@ public class MSCR {
     public ParallelDo<Pair<K, V>, T> getReducer() {
       return reducer;
     }
+    
+    @Override
+    public String toString() {
+      return "Output > " + output + ", FTn [" + flatten + "] SHfl [" + shuffle + "] COMb [" + combiner + "] RED [" + reducer + "]";
+    }
   }
   
   public Map<PCollection<?>, OutputChannel<?, ?, ?>> getOutputChannels() {
@@ -141,6 +146,12 @@ public class MSCR {
   
   @Override
   public String toString() {
-    return id+" #inputs "+inputs.size()+" #outputs "+outputChannels.size();
+    String str = "MSCR Id "+id+" #inputs "+inputs.size()+" #outputs "+outputChannels.size()+"\n"
+      +" -Inputs- ";
+    for(PCollection input: inputs) {
+      str += input+" with down ops "+((LazyCollection)input).downOps+" | ";
+    }
+     str += "\n -Outputs- " + outputChannels;
+     return str;
   }
 }

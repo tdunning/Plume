@@ -174,7 +174,6 @@ public class OptimizerTools {
           oC.output = groupByKey.getDest();
           if(groupByKey.getOrigin().getDeferredOp() instanceof Flatten) {
             oC.flatten = (Flatten)groupByKey.getOrigin().getDeferredOp();
-            oC.output = oC.flatten.getDest();
           }
           if(groupByKey.getDest().getDownOps() != null && groupByKey.getDest().getDownOps().size() == 1) {
             DeferredOp op = (DeferredOp)groupByKey.getDest().getDownOps().get(0);
