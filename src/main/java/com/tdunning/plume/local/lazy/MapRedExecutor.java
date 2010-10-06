@@ -231,10 +231,10 @@ public class MapRedExecutor {
             }
           }
         });
-        latch.await(); // wait until all MSCRs from this step are completed
-        if(abort.get()) {
-          throw new IOException("Current Workflow was aborted");
-        }
+      }
+      latch.await(); // wait until all MSCRs from this step are completed
+      if(abort.get()) {
+        throw new IOException("Current Workflow was aborted");
       }
       step = step.nextStep;
     } while(step != null);    

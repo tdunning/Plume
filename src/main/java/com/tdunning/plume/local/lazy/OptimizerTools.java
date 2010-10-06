@@ -20,6 +20,7 @@ package com.tdunning.plume.local.lazy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,10 @@ public class OptimizerTools {
   
   /**
    * This utility returns all the different MSCR blocks that can be created from this plan
+   * 
+   * (pere) As of Oct/2010, I think this code can be simplified to be more like addRemainingTrivialMSCRs(), so a possible TODO would be
+   *  to refactor it and make it more understandable. An opened question is whether there is an easy way of coding finding all possible
+   *  MSCRs (including trivial, not related to GroupByKey operations ones) in a single and elegant loop.
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
   static Set<MSCR> getMSCRBlocks(List<PCollection> outputs) {
@@ -216,23 +221,22 @@ public class OptimizerTools {
   static Set<MSCR> addRemainingTrivialMSCRs(List<PCollection> outputs, int currentMscrId, Set<MSCR> currentMSCRs) {
     // Get all Flatten from the tree
     List<DeferredOp> flattens = OptimizerTools.getAll(outputs, Flatten.class);
-    Set<MSCR> mscrs = new HashSet<MSCR>();
-    mscrs.addAll(currentMSCRs);
+    List<MSCR> trivialMSCRS = new LinkedList<MSCR>();
     Iterator<DeferredOp> it = flattens.iterator();
     mainLoop: while(it.hasNext()) {
       Flatten<?> flatten = (Flatten<?>)it.next();
       // Process only remaining flattens that are not in any other MSCR
-      for(MSCR mscr: mscrs) {
+      for(MSCR mscr: currentMSCRs) {
         for(Map.Entry<PCollection<?>, MSCR.OutputChannel<?, ?, ?>> entry: mscr.getOutputChannels().entrySet()) {
           if(entry.getValue().flatten != null && entry.getValue().flatten == flatten) {
             continue mainLoop; // skip this flatten
           }
         }
       }
-      //
+      // Create new trivial MSCR
       MSCR mscr = new MSCR(currentMscrId);
       currentMscrId++;
-      // add output channel
+      // add single output channel
       MSCR.OutputChannel oC = new MSCR.OutputChannel(flatten.getDest());
       oC.output = flatten.getDest();
       oC.flatten = flatten;
@@ -255,9 +259,33 @@ public class OptimizerTools {
           mscr.addInput(coll);
         }
       }
-      mscrs.add(mscr);
+      Iterator<MSCR> tIt = trivialMSCRS.iterator();
+      // Now we'll see if this trivial MSCR can be fused to another previous trivial MSCR
+      boolean canBeFused = false;
+      while(tIt.hasNext() && !canBeFused) {
+        MSCR trivialMSCR = tIt.next();
+        for(PCollection input: trivialMSCR.getInputs()) {
+          if(mscr.getInputs().contains(input)) {
+            canBeFused = true;
+            break;
+          }
+        }
+        if(canBeFused) {
+          trivialMSCR.addOutputChannel(oC); // add current output channel
+          for(PCollection input: mscr.getInputs()) {
+            if(!trivialMSCR.getInputs().contains(input)) { // add each input that is not already contained
+              trivialMSCR.addInput(input);
+            }
+          }
+        }
+      }
+      // We have a new trivial MSCR only if it could not be fused with previous ones
+      if(!canBeFused) {
+        trivialMSCRS.add(mscr);
+      }
     }
-    return mscrs;
+    currentMSCRs.addAll(trivialMSCRS);
+    return currentMSCRs;
   }
   
   /**

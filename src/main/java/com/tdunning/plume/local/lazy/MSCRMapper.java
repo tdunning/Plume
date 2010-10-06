@@ -87,60 +87,61 @@ public class MSCRMapper extends Mapper<WritableComparable, WritableComparable, P
       toProcess = Pair.create(key, value);
     }
 
-    DeferredOp op = l.getDownOps().get(0); // WARN assuming only one op can follow mscr input collections (after optimizing)
-    if(op instanceof MultipleParallelDo) {
-      MultipleParallelDo mPDo = ((MultipleParallelDo)op);
-      for(Object entry: mPDo.getDests().entrySet()) {
-        Map.Entry<PCollection, DoFn> en = (Map.Entry<PCollection, DoFn>)entry;
-        LazyCollection<?> lCol = (LazyCollection<?>)en.getKey();
-        DeferredOp childOp = null;
-        if(lCol.getDownOps() != null && lCol.getDownOps().size() > 0) {
-          childOp = lCol.getDownOps().get(0);
-        }
-        final Integer channel;
-        if(childOp != null && childOp instanceof Flatten) {
-          channel = mscr.getNumberedChannels().get(((Flatten)childOp).getDest());
-        } else if(childOp != null && childOp instanceof GroupByKey) {
-          channel = mscr.getNumberedChannels().get(((GroupByKey)childOp).getOrigin());
-        } else {
-          channel = mscr.getNumberedChannels().get(en.getKey()); // bypass channel?
-        }
-        if(channel == null) {
-          // This is not for this MSCR - just skip it
-          return;
-        }
-        // Call parallelDo function
-        en.getValue().process(toProcess, new EmitFn() {
-          @Override
-          public void emit(Object v) {
-            try {
-              if(v instanceof Pair) {
-                Pair p = (Pair)v;
-                context.write(
-                  new PlumeObject((WritableComparable)p.getKey(), channel),
-                  new PlumeObject((WritableComparable)p.getValue(), channel)
-                );
-              } else {
-                context.write(
-                  new PlumeObject((WritableComparable)v, channel),
-                  new PlumeObject((WritableComparable)v, channel)
-                );              
-              }
-            } catch (Exception e) {
-              e.printStackTrace(); // TODO How to report this
-            }
+    for(DeferredOp op: l.getDownOps()) {
+      if(op instanceof MultipleParallelDo) {
+        MultipleParallelDo mPDo = ((MultipleParallelDo)op);
+        for(Object entry: mPDo.getDests().entrySet()) {
+          Map.Entry<PCollection, DoFn> en = (Map.Entry<PCollection, DoFn>)entry;
+          LazyCollection<?> lCol = (LazyCollection<?>)en.getKey();
+          DeferredOp childOp = null;
+          if(lCol.getDownOps() != null && lCol.getDownOps().size() > 0) {
+            childOp = lCol.getDownOps().get(0);
           }
-        });
-      }
-    } else {
-      if(op instanceof Flatten) {
-        l = (LazyCollection)((Flatten)op).getDest();
-      }
-      int channel = mscr.getNumberedChannels().get(l);
-      if(toProcess instanceof Pair) {
-        context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
+          final Integer channel;
+          if(childOp != null && childOp instanceof Flatten) {
+            channel = mscr.getNumberedChannels().get(((Flatten)childOp).getDest());
+          } else if(childOp != null && childOp instanceof GroupByKey) {
+            channel = mscr.getNumberedChannels().get(((GroupByKey)childOp).getOrigin());
+          } else {
+            channel = mscr.getNumberedChannels().get(en.getKey()); // bypass channel?
+          }
+          if(channel == null) {
+            // This is not for this MSCR - just skip it
+            return;
+          }
+          // Call parallelDo function
+          en.getValue().process(toProcess, new EmitFn() {
+            @Override
+            public void emit(Object v) {
+              try {
+                if(v instanceof Pair) {
+                  Pair p = (Pair)v;
+                  context.write(
+                    new PlumeObject((WritableComparable)p.getKey(), channel),
+                    new PlumeObject((WritableComparable)p.getValue(), channel)
+                  );
+                } else {
+                  context.write(
+                    new PlumeObject((WritableComparable)v, channel),
+                    new PlumeObject((WritableComparable)v, channel)
+                  );              
+                }
+              } catch (Exception e) {
+                e.printStackTrace(); // TODO How to report this
+              }
+            }
+          });
+        }
       } else {
-        context.write(new PlumeObject(value, channel), new PlumeObject(value, channel));
+        if(op instanceof Flatten) {
+          l = (LazyCollection)((Flatten)op).getDest();
+        }
+        int channel = mscr.getNumberedChannels().get(l);
+        if(toProcess instanceof Pair) {
+          context.write(new PlumeObject(key, channel), new PlumeObject(value, channel));
+        } else {
+          context.write(new PlumeObject(value, channel), new PlumeObject(value, channel));
+        }
       }
     }
   };  

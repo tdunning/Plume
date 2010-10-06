@@ -9,17 +9,23 @@
     <version>1.0</version>
 
   <repositories>
-    <repository>
+ <!--   <repository>
       <id>Cloudera</id>
       <url>https://repository.cloudera.com/content/repositories/releases/</url>
-    </repository>
+    </repository> -->
     <repository>
       <id>Apache Snapshots</id>
       <url>http://repository.apache.org/snapshots/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
     <repository>
       <id>JBoss</id>
       <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
     <repository>
       <id>Apache Snapshots-group</id>
